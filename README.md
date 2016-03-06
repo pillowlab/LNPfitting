@@ -1,2 +1,2 @@
 # MID_nonparLNP
-Maximally Informative Dimensions / nonparametric LNP model fitting
+Maximally Informative Dimensions: nonparametric LNP model fitting

@@ -44,4 +44,4 @@ al 2004:
   differentiable and therefore easier to ascend.
 
 * This implementation uses standard quasi-Newton methods to find a
-  local optimum, and does not use simulated annealing.
+  local optimum, as opposed to simulated annealing.

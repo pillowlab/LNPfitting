@@ -1,6 +1,6 @@
 # MID_LNPestimator
 Maximally Informative Dimensions estimator: nonparametric estimator
-for LNP model 
+for LNP spike train model 
 
 **Description:** Estimates a set of linear filters from a stimulus and
  spike train using the *maximally informative dimension* (MID)
@@ -17,8 +17,8 @@ Download
 ==========
 
 * **Command line**: clone the repository from github (e.g., ```git
-  clone git@github.com:pillowlab/MID_nonparLNP.git``` )
-* **Browser**:  download zipped archive:  [MID_nonparLNP-master.zip](https://github.com/pillowlab/MID_nonparLNP/archive/master.zip)
+  clone git@github.com:pillowlab/MID_LNPestimator.git``` )
+* **Browser**:  download zipped archive:  [MID_LNPestimator-master.zip](https://github.com/pillowlab/MID_LNPestimator/archive/master.zip)
 
 
 Usage

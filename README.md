@@ -34,3 +34,14 @@ simulated examples.
 
 Notes
 =====
+
+Primary differences between our implementation and that of Sharpee et
+al 2004:
+
+* This implementation parametrizes the nonlinearity with smooth RBF
+  (or CBF) basis functions (followed by a point nonlinearity) instead
+  of square histogram bins, which makes the log-likelihood
+  differentiable and therefore easier to ascend.
+
+* This implementation uses standard quasi-Newton methods to find a
+  local optimum, and does not use simulated annealing.

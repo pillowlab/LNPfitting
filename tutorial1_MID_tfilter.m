@@ -3,12 +3,18 @@
 % Tutorial script for illustrating MID estimator code for neuron with
 % purely temporal stimulus
 
-% 0. Set up Linear-Nonlinear-Poisson (LNP) model neuron 
-nt = 32;        % number of temporal elements of filter
-tvec = (-nt+1:0)'; % vector of time indices (in units of stim frames)
+addpath code_LNPfitting
+addpath nlfuns;
+addpath code_iSTAC
 
-% Make some filters
-filt1 = exp(-((tvec+nt/4)/(nt/10)).^2)-.25*exp(-((tvec+nt/2)/(nt/4)).^2); % difference of Gaussians
+% 0. Set up Linear-Nonlinear-Poisson (LNP) model neuron 
+nkt = 32;           % number of time bins in filter
+tk = (-nkt+1:0)'; % vector of time indices (in units of stim frames)
+dtSim = .01; % bin size for representing time (here => 100 Hz frame rate)
+ttk = tk*dtSim;
+
+% Make some fake filters 
+filt1 = exp(-((tk+nkt/4)/(nkt/10)).^2)-.25*exp(-((tk+nkt/2)/(nkt/4)).^2); % difference of Gaussians
 filt1 = filt1./norm(filt1);  %normalize
 
 filt2 = [diff(filt1); 0];  % 2nd filter
@@ -17,16 +23,16 @@ filt2 = filt2./norm(filt2); % normalize
 filt3 = [diff(filt2); 0];  % 3rd filter
 filt3 = filt3./norm(filt3); % normalize
 
-% Make plots
-plot(tvec, [filt1 filt2 filt3])  
+% Plot these filters
+plot(ttk, [filt1 filt2 filt3]);  
 title('filters for simulation');
-xlabel('time before spike'); ylabel('filter coeff');
-
+xlabel('time before spike (s)'); ylabel('filter coeff');
+axis tight;
 
 %% 1.  Simulate data from LNP neuron
 
 % Create stimulus 
-slen = 10000;   % Stimulus length (Better convergence w/ longer stimulus)
+slen = 20000;   % Stimulus length (Better convergence w/ longer stimulus)
 Stim = randn(slen,1);
 Stim = conv2(Stim,normpdf(-3:3,0,1)','same'); % smooth stimulus
 RefreshRate = 100; % refresh rate
@@ -38,50 +44,79 @@ f3 = sameconv(Stim,filt3);
 
 % Compute output of nonlinearity
 softrect = @(x)(log(1+exp(x))); % soft-rectification function
-fnlin = @(x1,x2,x3)(softrect(100./(1+exp(x1-1))+10*x2.^2+4*(x3-1).^2-80));
+fnlin = @(x1,x2,x3)(softrect(120./(1+exp(x1-1))+10*x2.^2+5*(x3).^2-80));
 lam = fnlin(f1,f2,f3);
 
 %  Simulate spike train
-Refreshrate = 100; % in Hz
+dtSim = 100; % in Hz
 spikes = poissrnd(lam/RefreshRate); % generate spikes
 
 
-%%
-[sta,stc,rawmu,rawcov] = simpleSTC(Stim,spikes,nt);
-[u,s,v] = svd(stc);
+%% 2. Divide into training and test datasets
 
-ndims = 10;  % (Only need 2, but compute 10 for demonstration purposes)
-eigvalthresh = 0.05; % eigenvalue cutoff threshold (for pruning dims from raw stimulus)
-[vecs, vals, DD] = compiSTAC(sta, stc, rawmu, rawcov, ndims,eigvalthresh);
-KLcontributed = [vals(1); diff(vals)];
-ndims = length(vals);
+trainfrac = .8; % fraction of data to set aside as "test data"
+slen_tr = round(trainfrac*slen); % length of training dataset
+slen_test = slen-slen;  % length of test dataset
+    
+% Set training data
+Stim_tr = Stim(1:slen_tr,:);
+sps_tr = spikes(1:slen_tr,:);
 
-subplot(221);  plot(1:ndims, KLcontributed, 'o');
-title('KL contribution');
-xlabel('subspace dimensionality');
+% Set test data
+Stim_test = Stim(slen_tr+1:end,:);
+sps_test = spikes(slen_tr+1:end,:);
 
-subplot(221);
-plot(tvec, filt1, 'k--', tvec, u(:,1:2)*u(:,1:2)'*filt1, ...
-    tvec, vecs(:,1:2)*vecs(:,1:2)'*filt1, 'r');
-title('Reconstruction of 1st filter'); ylabel('filter coeff');
-legend('true k', 'STC', 'iSTAC', 'location', 'northwest');
+nsp = sum(sps_tr);
+fprintf('Number of spikes in training dataset: %d\n', nsp);
+    
 
-subplot(223);
-plot(tvec, filt2, 'k--', tvec, u(:,1:2)*u(:,1:2)'*filt2, ...
-    tvec, vecs(:,1:2)*vecs(:,1:2)'*filt2, 'r');
-title('Reconstruction of 2nd filter');
-xlabel('time before spike'); ylabel('filter coeff');
+%% 3. Compute first iSTAC filter
 
-subplot(222);  
-plot(1:ndims, KLcontributed, 'o');
-title('KL contribution');
-xlabel('subspace dimensionality');
+% Compute STA and STC
+fprintf('Computing STA and STC...\n');
+[sta,stc,rawmu,rawcov] = simpleSTC(Stim,spikes,nkt);
 
-subplot(224);
-plot(tvec, vecs(:,1:2));
-title('iSTAC filters');
-legend('1st', '2nd', 'location', 'northwest');
+% Compute first iSTAC filter 
+nfilters = 1;  % 
+condthresh = 0.05; % threshold on condition number (for pruning low-variance stimulus axes)
+fprintf('Computing first iSTAC filter...\n');
+filt0 = compiSTAC(sta,stc,rawmu,rawcov,nfilters,condthresh);
 
-Errs = [subspace([filt1 filt2], u(:,1:2)) subspace([filt1 filt2], vecs(:,1:2))];
-fprintf(1, 'Errors: STC=%.3f, iSTAC=%.3f\n', Errs(1), Errs(2));
+% Initialize struct for MID fitting of LNP model
+mask = [];  % use all training data
+gg0 = makeFittingStruct_LNP(filt0,RefreshRate,mask); % create LNP fitting structure
+
+
+%% 4. Set up temporal basis for representing MID filters
+
+% Set parameters for temporal basis and inspect accuracy of reconstruction
+ktbasprs.neye = 0; % number of "identity"-like basis vectors
+ktbasprs.ncos = 10; % number of raised cosine basis vectors
+ktbasprs.kpeaks = [0 nkt/2+3]; % location of 1st and last basis vector bump
+ktbasprs.b = 2.5; % determines how nonlinearly to stretch basis (higher => more linear)
+[ktbas, ktbasis] = makeBasis_StimKernel(ktbasprs, nkt); % make basis
+filtprs_basis = (ktbas\filt0);  % filter represented in new basis
+filt_basis = ktbas*filtprs_basis;
+
+% Insert filter into new fitting struct
+gg0.k = filt_basis; % filter
+gg0.kt = filtprs_basis; % filter coefficients (in temporal basis)
+gg0.ktbas = ktbas; % temporal basis
+gg0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
+
+% Plot iSTAC vs. best reconstruction in temporal basis
+subplot(211); % ----
+plot(ttk,ktbasis); xlabel('time bin'); title('temporal basis'); axis tight;
+subplot(212); % ----
+plot(ttk,filt0,'b',ttk,filt_basis,'r--'); axis tight; title('iSTAC filter vs. basis fit');
+
+
+%% 5.  Now estimate filters using MID estimator with RBF nonlinearity
+
+fstruct.nfuncs = 3; % number of basis functions for nonlinearity
+fstruct.epprob = [0, 1]; % cumulative probability outside outermost basis function peaks
+fstruct.nloutfun = @logexp1;  % log(1+exp(x)) % nonlinear stretching function
+%[gg0,negL0_tr] = fitNlin_CBFs(gg0,Stim_tr,sps_tr,fstruct); % estimate nonparametric nonlinearity
+[gg0r,negL0r_tr] = fitNlin_RBFs(gg0,Stim_tr,sps_tr,fstruct); % estimate RBF nonlinearity (should be identical)
+    
 

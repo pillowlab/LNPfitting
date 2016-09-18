@@ -1,15 +1,15 @@
 # MIDestimator
-"Maximally-Informative-Dimensions" estimator for the Linear-Nonlinear-Poisson (LNP) model
+"Maximally-Informative-Dimensions" (MID) estimator for the Linear-Nonlinear-Poisson (LNP) model
 
 **Description:** Estimates the parameters of an LNP model (a set of linear filters and a nonlinear function) from a stimulus and
- spike train using the *maximally informative dimension* (MID) estimator (introduced in Sharpee *et al* 2004). This is a nonparametric maximum-likelihood estimator for the parameters of a linear-nonlinear-Poisson (LNP) neural response model.
+ spike train using the *maximally informative dimension* (MID) estimator (introduced in Sharpee *et al* 2004). MID is a nonparametric maximum-likelihood estimator for the parameters of a linear-nonlinear-Poisson (LNP) neural response model.
 
 **Relevant publications:**
 
 * Sharpee, Rust, & Bialek, *Neural Comp* 2004.  [Original publication].
 * Williamson, Sahani, & Pillow, *PLoS Comp Bio* 2015. [[abs](http://pillowlab.princeton.edu/pubs/abs_Williamson15_PLoSCB.html),
       [pdf](http://pillowlab.princeton.edu/pubs/Williamson_etal_plosCB2015.pdf)]  
-      [Showing equivalence of MID to maximum-likelihood estimation of LNP]
+      [Showing equivalence of MID to maximum-likelihood estimator for LNP]
 
 Download
 ==========

@@ -79,7 +79,7 @@ fprintf('Computing STA and STC...\n');
 % Compute first iSTAC filter 
 nfilters = 1;  % 
 condthresh = 0.05; % threshold on condition number (for pruning low-variance stimulus axes)
-fprintf('Computing first iSTAC filter...\n');
+fprintf('Computing top iSTAC filter...\n');
 filt0 = compiSTAC(sta,stc,rawmu,rawcov,nfilters,condthresh);
 
 % Initialize struct for MID fitting of LNP model
@@ -116,6 +116,8 @@ plot(ttk,filt0,'b',ttk,filt_basis,'r--'); axis tight; title('iSTAC filter vs. ba
 fstruct.nfuncs = 3; % number of basis functions for nonlinearity
 fstruct.epprob = [0, 1]; % cumulative probability outside outermost basis function peaks
 fstruct.nloutfun = @logexp1;  % log(1+exp(x)) % nonlinear stretching function
+
+fprintf('Computing MID estimator, 1-filter model\n');
 %[gg0,negL0_tr] = fitNlin_CBFs(gg0,Stim_tr,sps_tr,fstruct); % estimate nonparametric nonlinearity
 [gg0r,negL0r_tr] = fitNlin_RBFs(gg0,Stim_tr,sps_tr,fstruct); % estimate RBF nonlinearity (should be identical)
     

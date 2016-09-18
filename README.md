@@ -1,35 +1,31 @@
-# MID_LNPestimator
-Maximally Informative Dimensions estimator: nonparametric estimator
-for LNP spike train model 
+# MIDestimator
+"Maximally-Informative-Dimensions" estimator for the Linear-Nonlinear-Poisson (LNP) model
 
-**Description:** Estimates a set of linear filters from a stimulus and
- spike train using the *maximally informative dimension* (MID)
- estimator (introduced in Sharpee *et al* 2004), which is a
- nonparametric maximum-likelihood estimator for the parameters of a
- linear-nonlinear-Poisson (LNP) neural response model.
+**Description:** Estimates the parameters of an LNP model (a set of linear filters and a nonlinear function) from a stimulus and
+ spike train using the *maximally informative dimension* (MID) estimator (introduced in Sharpee *et al* 2004). This is a nonparametric maximum-likelihood estimator for the parameters of a linear-nonlinear-Poisson (LNP) neural response model.
 
-**Relevant publication:**
-Williamson, Sahani & Pillow, *PLoS Comp Bio*
-2015. [[abs](http://pillowlab.princeton.edu/pubs/abs_Williamson15_PLoSCB.html),
-      [pdf](http://pillowlab.princeton.edu/pubs/Williamson_etal_plosCB2015.pdf)]
+**Relevant publications:**
+
+* Sharpee, Rust, & Bialek, *Neural Comp* 2004.  [Original publication].
+* Williamson, Sahani, & Pillow, *PLoS Comp Bio* 2015. [[abs](http://pillowlab.princeton.edu/pubs/abs_Williamson15_PLoSCB.html),
+      [pdf](http://pillowlab.princeton.edu/pubs/Williamson_etal_plosCB2015.pdf)]  
+      [Showing equivalence of MID to maximum-likelihood estimation of LNP]
 
 Download
 ==========
 
-* **Command line**: clone the repository from github (e.g., ```git
-  clone git@github.com:pillowlab/MID_LNPestimator.git``` )
-* **Browser**:  download zipped archive:  [MID_LNPestimator-master.zip](https://github.com/pillowlab/MID_LNPestimator/archive/master.zip)
+* **Command line**: clone the repository from github:
+```git clone git@github.com:pillowlab/MIDestimator.git```
+* **Browser**:  download zipped archive:  [MIDestimator-master.zip](https://github.com/pillowlab/MIDestimator/archive/master.zip)
 
 
 Usage
 =====
 
 * Launch matlab and cd into the directory containing the code
- (e.g. `cd code/MIDforLNP/`).
+ (e.g. `cd code/MIDestimator/`).
 
-* Examine the script `test.m` for a line-by-line tutorial on how to
-use the code contained in this package, which goes through several
-simulated examples.
+* Examine the tutorial scripts (`tutorial1_MID_tfilter.m`, ...) for detailed instructions and applications to simulated datasets.
 
 
 Notes

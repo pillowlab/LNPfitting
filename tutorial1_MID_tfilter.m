@@ -3,9 +3,6 @@
 % Tutorial script for illustrating MID estimator code for neuron with
 % purely temporal stimulus
 
-addpath code_LNPfitting
-addpath nlfuns;
-addpath code_iSTAC
 
 % 0. Set up Linear-Nonlinear-Poisson (LNP) model neuron 
 nkt = 32;           % number of time bins in filter

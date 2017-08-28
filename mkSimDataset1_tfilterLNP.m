@@ -15,8 +15,8 @@ initpaths;
 
 nkt = 30;  % number of time bins in filter
 
-dtSim = .01; % bin size for representing time (here .01s => 100 Hz stimulus frame rate)
-RefreshRate = 1/dtSim; % Refresh rate
+dtBin = .01; % bin size for representing time (here .01s => 100 Hz stimulus frame rate)
+RefreshRate = 1/dtBin; % Refresh rate
 tk = (-nkt+1:0)'; % vector of time indices (in units of stim frames)
 
 % Make some stimulus filters for simulated neuron
@@ -34,7 +34,7 @@ filt3 = filt3./norm(filt3); % normalize to make a unit vector
 filts_true = [filt1 filt2 filt3];
 
 % Plot these filters
-plot(tk*dtSim, filts_true, 'o-');
+plot(tk*dtBin, filts_true, 'o-');
 title('filters for simulation');
 xlabel('time before spike (s)'); ylabel('filter coefficient');
 axis tight;
@@ -59,12 +59,11 @@ fnlin = @(x1,x2,x3)(softrect(40*x1 + 12*x2.^2 + 10*(x3).^2));
 lam = fnlin(f1,f2,f3);
 
 %  Simulate spike train
-dtSim = 100; % in Hz
 spikes = poissrnd(lam/RefreshRate); % generate spikes
 
 % Report number of spikes and spike rate
 nsp = sum(spikes); % number of spikes
-fprintf('LNP simulation: %d time bins, %d spikes  (%.2f sp/s)\n', slen,nsp, nsp/slen*dtSim);
+fprintf('LNP simulation: %d time bins, %d spikes  (%.2f sp/s)\n', slen,nsp, nsp/slen*RefreshRate);
 
 
 %% 3. Save the dataset
@@ -72,6 +71,7 @@ fprintf('LNP simulation: %d time bins, %d spikes  (%.2f sp/s)\n', slen,nsp, nsp/
 simdata1.Stim = Stim;
 simdata1.spikes = spikes;
 simdata1.filts_true = filts_true;
+simdata1.dtBin = dtBin; 
+simdata1.RefreshRate = RefreshRate;
 simdata1.label = 'simulated dataset of 3-filter LNP neuron to temporal white noise';
-
 save('simdata/simdata1.mat', 'simdata1');

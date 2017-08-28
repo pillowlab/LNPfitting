@@ -6,7 +6,7 @@
 
 **Relevant publications:**
 
-* Sharpee, Rust, & Bialek, *Neural Comp* 2004.  [Original publication].
+* Sharpee, Rust, & Bialek, *Neural Computation* 2004.  [link](http://www.mitpressjournals.org/doi/abs/10.1162/089976604322742010).
 * Williamson, Sahani, & Pillow, *PLoS Comp Bio* 2015. [[abs](http://pillowlab.princeton.edu/pubs/abs_Williamson15_PLoSCB.html),
       [pdf](http://pillowlab.princeton.edu/pubs/Williamson_etal_plosCB2015.pdf)]  
       [Showing equivalence of MID to maximum-likelihood estimator for LNP]

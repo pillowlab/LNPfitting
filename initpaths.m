@@ -2,10 +2,10 @@
 %
 % Initialize paths needed for MIDlnp code
 
-addpath code_iSTAC   % directory for iSTAC (used to initialize filter estimates)
-addpath code_MIDlnp  % directory for MID code
+addpath tools_iSTAC   % directory for iSTAC (used to initialize filter estimates)
+addpath tools_LNPfitting  % directory for MID code
 addpath nlfuns;      % directory for nonlinearities
 
-if ~exist('simdata','dir')
-    mkdir simdata;
+if ~exist('dir_simdata','dir')
+    mkdir dir_simdata;
 end

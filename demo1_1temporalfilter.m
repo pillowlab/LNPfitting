@@ -7,10 +7,10 @@
 initpaths;
 
 % Create simulated dataset if necessary
-datasetname = 'simdata/simdata1.mat';  % name of dataset
+datasetname = 'dir_simdata/simdata1.mat';  % name of dataset
 if ~exist(datasetname,'file')
     fprintf('Creating simulated dataset: ''%s''\n', datasetname);
-    mkSimDataset1_tfilterLNP;
+    mkSimDataset1_1tfilter;
 end
 
 %% 1. Load data and divide into training and tst datasets

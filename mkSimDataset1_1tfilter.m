@@ -1,4 +1,4 @@
-% script_makeSimulatedDataset_tfilter.m
+% mkSimDataset1_1tfilter.m
 %
 % Generates a simulated dataset with a response of a simulated LNP neuron
 % to a 1D (temporal) stimulus. LNP neuron generated has a set of three
@@ -7,9 +7,8 @@
 % Dataset created is required for tutorial script tutorial1_MID_tfilter.m 
 
 
-% Initialize paths (and create 'simdata' folder if necessary)
+% Initialize paths (and create 'dir_simdata' folder if necessary)
 initpaths;
-
 
 %% 1. Make filters for LNP neuron
 
@@ -74,4 +73,4 @@ simdata1.filts_true = filts_true;
 simdata1.dtBin = dtBin; 
 simdata1.RefreshRate = RefreshRate;
 simdata1.label = 'simulated dataset of 3-filter LNP neuron to temporal white noise';
-save('simdata/simdata1.mat', 'simdata1');
+save('dir_simdata/simdata1.mat', 'simdata1');

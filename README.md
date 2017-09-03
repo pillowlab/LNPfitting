@@ -16,15 +16,15 @@ Download
 ==========
 
 * **Command line**: clone the repository from github:
-```git clone git@github.com:pillowlab/MIDestimator.git```
-* **Browser**:  download zipped archive:  [MIDestimator-master.zip](https://github.com/pillowlab/MIDestimator/archive/master.zip)
+```git clone git@github.com:pillowlab/LNPfitting.git```
+* **Browser**:  download zipped archive:  [LNPfitting-master.zip](https://github.com/pillowlab/LNPfitting/archive/master.zip)
 
 
 Usage
 =====
 
 * Launch matlab and cd into the directory containing the code
- (e.g. `cd code/MIDestimator/`).
+ (e.g. `cd code/LNPfitting/`).
 
 * Examine the demo scripts (`demo1_1temporalfilter`, ...) for detailed instructions and applications to simulated datasets.
 

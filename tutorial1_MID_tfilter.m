@@ -13,11 +13,9 @@ if ~exist('simdata/simdata1.mat','file')
 end
 
 load simdata/simdata1.mat;  % load dataset
-slen = size(simdata1.Stim,1);
 
-nkt = 30; % number of time bins in filter
-% (Normally would want to experiment to set this (eg by inspecting the STA) 
-
+slen = size(simdata1.Stim,1); % number of time bins in stimulus
+RefreshRate = simdata1.RefreshRate; % stimulus refresh rate (in Hz).
 
 %% 1. Divide into training and test datasets
 
@@ -38,6 +36,9 @@ fprintf('Number of spikes in training dataset: %d\n', nsp);
     
 
 %% 2. Initialize filters using iSTAC estimator
+
+nkt = 30; % number of time bins in filter
+% (Normally would want to experiment to set this (eg by inspecting the STA) 
 
 % Compute STA and STC
 fprintf('Computing STA and STC...\n');

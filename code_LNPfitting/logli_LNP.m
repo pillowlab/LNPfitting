@@ -1,9 +1,9 @@
-function [neglogli,rr,Istm] = neglogli_LNP(gg,Stim,sps)
-% NEGLOGLI_LNP - compute negative log-likelihood for LNP model
+function [logli,rr,Istm] = logli_LNP(pp,Stim,sps)
+% LOGLI_LNP - compute log-likelihood for LNP model
 %
-%   [neglogli,rr,Istm] = neglogli_LNP(gg,Stim,sps)
+%   [neglogli,rr,Istm] = logli_LNP(gg,Stim,sps)
 %  
-% Inputs: gg [struct] - param object
+% Inputs: pp [struct] - param structure with fields:
 %                       ------------
 %                       .k - stimulus kernel
 %                       .nlfun - nonlinearity
@@ -15,35 +15,33 @@ function [neglogli,rr,Istm] = neglogli_LNP(gg,Stim,sps)
 %     neglogli [1x1] - negative log-likelihood of spike trains
 %           rr [Nx1] - conditional intensity (in expected spikes /sec)
 %      Istm [N x nK] - net linear input from stimulus (1 column per filter)
-%
-% updated: 16 Jan, 2014 (JW Pillow)
 
-RefreshRate = gg.RefreshRate; % frame rate
+RefreshRate = pp.RefreshRate; % frame rate
 slen = size(Stim,1); % number of time bins in stimulus
 
 % -- Compute filtered resp to signal ------------------
-if size(gg.k,3)==1
-    
+if size(pp.k,3)==1
     % single filter
-    Istm = sameconv(Stim,gg.k)+gg.dc; % filter stimulus with k
+    Istm = sameconv(Stim,pp.k)+pp.dc; % filter stimulus with k
 
 else
     % multiple filters
-    nfilts = size(gg.k,3);
+    nfilts = size(pp.k,3);
     Istm = zeros(slen,nfilts);
     for j = 1:nfilts
-        Istm(:,j) = sameconv(Stim,gg.k(:,:,j)); 
+        Istm(:,j) = sameconv(Stim,pp.k(:,:,j)); 
     end
     
 end
 
-rr = gg.nlfun(Istm)/RefreshRate;  % Conditional intensity
-iiLi = computeMask_LNP(gg.mask,size(rr,1));  % determine indices from mask
+% Compute conditional intensity 
+rr = pp.nlfun(Istm)/RefreshRate;  % conditional intensity (spike rate) in sps/bin
+iiLi = computeMask_LNP(pp.mask,size(rr,1));  % determine indices to keep from mask
     
-% ---- Compute negative log-likelihood ------
-neglogli = -sps(iiLi)'*log(rr(iiLi)) + sum(rr(iiLi));
+% ---- Compute log-likelihood ------
+logli = sps(iiLi)'*log(rr(iiLi)) - sum(rr(iiLi));
 
-% If desired, pass out the conditional intensity scaled in sps/sec
+% If desired, pass out the conditional intensity in sps/sec
 if nargout > 1
     rr = rr*RefreshRate;
 end

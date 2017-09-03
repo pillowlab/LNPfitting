@@ -1,5 +1,5 @@
-# MIDestimator
-"Maximally-Informative-Dimensions" (MID) estimator for the Linear-Nonlinear-Poisson (LNP) model
+# LNPfitting
+Linear-Nonlinear-Poisson (LNP) model fitting via Maximally-Informative-Dimensions (MID) / maximum likelihood Edit
 
 **Description:** Estimates the parameters of an LNP model (a set of linear filters and a nonlinear function) from a stimulus and
  spike train using the *maximally informative dimension* (MID) estimator (introduced in Sharpee *et al* 2004). MID is a nonparametric maximum-likelihood estimator for the parameters of a linear-nonlinear-Poisson (LNP) neural response model.
@@ -26,7 +26,7 @@ Usage
 * Launch matlab and cd into the directory containing the code
  (e.g. `cd code/MIDestimator/`).
 
-* Examine the tutorial scripts (`tutorial1_MID_tfilter.m`, ...) for detailed instructions and applications to simulated datasets.
+* Examine the demo scripts (`demo1_1temporalfilter`, ...) for detailed instructions and applications to simulated datasets.
 
 
 Notes

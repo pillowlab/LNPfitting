@@ -1,14 +1,16 @@
-% mkSimDataset1_1tfilter.m
+% mkSimData1_1Dwhitenoisestim.m
 %
 % Generates a simulated dataset with a response of a simulated LNP neuron
-% to a 1D (temporal) stimulus. LNP neuron generated has a set of three
-% temporal filters, each of length 30 time bins. 
+% to a 1D temporal white noise stimulus. LNP neuron generated has a set of
+% three temporal filters, each of length 30 time bins. 
 %
-% Dataset created is required for tutorial script tutorial1_MID_tfilter.m 
+% Dataset created is required for tutorial script demo1_1temporalfilter.m
 
 
-% Initialize paths (and create 'dir_simdata' folder if necessary)
+% Initialize paths (and create 'simdatadir' folder if necessary)
 initpaths;
+
+fname = 'simdatadir/simdata2.mat'; % pathname of file to create
 
 %% 1. Make filters for LNP neuron
 
@@ -44,8 +46,7 @@ axis tight;
 % Create stimulus 
 slen = 20000;   % Stimulus length (make longer to see better recovery of true filters)
 Stim = randn(slen,1); % 1D Gaussian white noise (temporal) stimulus
-%Stim = conv2(Stim,normpdf(-3:3,0,1)','same'); % smooth stimulus
-
+Stim = 1.3*conv2(Stim,normpdf(-4:4,0,1.25)','same'); % smooth stimulus
 
 % Convolve stimulus with filters
 f1 = sameconv(Stim,filt1);
@@ -67,10 +68,10 @@ fprintf('LNP simulation: %d time bins, %d spikes  (%.2f sp/s)\n', slen,nsp, nsp/
 
 %% 3. Save the dataset
 
-simdata1.Stim = Stim;
-simdata1.spikes = spikes;
-simdata1.filts_true = filts_true;
-simdata1.dtBin = dtBin; 
-simdata1.RefreshRate = RefreshRate;
-simdata1.label = 'simulated dataset of 3-filter LNP neuron to temporal white noise';
-save('dir_simdata/simdata1.mat', 'simdata1');
+simdata.Stim = Stim;
+simdata.spikes = spikes;
+simdata.filts_true = filts_true;
+simdata.dtBin = dtBin; 
+simdata.RefreshRate = RefreshRate;
+simdata.label = 'simulated dataset of 3-filter LNP neuron to temporal correlated noise';
+save(fname, 'simdata');

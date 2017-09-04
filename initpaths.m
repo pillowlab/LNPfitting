@@ -6,6 +6,6 @@ addpath tools_iSTAC   % directory for iSTAC (used to initialize filter estimates
 addpath tools_LNPfitting  % directory for MID code
 addpath nlfuns;      % directory for nonlinearities
 
-if ~exist('dir_simdata','dir')
-    mkdir dir_simdata;
+if ~exist('simdatadir','dir')
+    mkdir simdatadir;
 end

@@ -6,12 +6,23 @@
 % initialize paths
 initpaths;
 
-% Create simulated dataset if necessary
-datasetname = 'dir_simdata/simdata1.mat';  % name of dataset
-if ~exist(datasetname,'file')
-    fprintf('Creating simulated dataset: ''%s''\n', datasetname);
-    mkSimDataset1_1tfilter;
-end
+DATASETNUM = 1;  % select: 1 (white noise) or 2 (correlated)
+
+% pick dataset to load (or create if necessary)
+switch DATASETNUM
+    case 1
+        datasetname = 'simdatadir/simdata1.mat';  % name of dataset
+        if ~exist(datasetname,'file') % Create simulated dataset if necessary
+            fprintf('Creating simulated dataset: ''%s''\n', datasetname);
+            mkSimData1_1Dwhitenoisestim;
+        end
+    case 2
+        datasetname = 'simdatadir/simdata2.mat';  % name of dataset
+        if ~exist(datasetname,'file') % Create simulated dataset if necessary
+            fprintf('Creating simulated dataset: ''%s''\n', datasetname);
+            mkSimData2_1Dcorrstim;
+        end
+end        
 
 %% 1. Load data and divide into training and tst datasets
 
@@ -19,17 +30,17 @@ trainfrac = .8; % fraction of data to set aside as "tst data"
 
 % Load data
 load(datasetname); % load dataset 
-RefreshRate = simdata1.RefreshRate; % stimulus refresh rate (in Hz).
-slen = size(simdata1.Stim,1); % number of time bins in stimulus
+RefreshRate = simdata.RefreshRate; % stimulus refresh rate (in Hz).
+slen = size(simdata.Stim,1); % number of time bins in stimulus
 slen_tr = round(trainfrac*slen); % length of training dataset
 slen_tst = slen-slen_tr;  % length of tst dataset
     
 % Set training data
-Stim_tr = simdata1.Stim(1:slen_tr,:);
-sps_tr = simdata1.spikes(1:slen_tr,:);
+Stim_tr = simdata.Stim(1:slen_tr,:);
+sps_tr = simdata.spikes(1:slen_tr,:);
 % Set test data
-Stim_tst = simdata1.Stim(slen_tr+1:end,:);
-sps_tst = simdata1.spikes(slen_tr+1:end,:);
+Stim_tst = simdata.Stim(slen_tr+1:end,:);
+sps_tst = simdata.spikes(slen_tr+1:end,:);
 
 nsp_tr = sum(sps_tr); % Determine how many spikes in training set
 fprintf('\n------------\nLoaded %s\n',datasetname);
@@ -51,17 +62,45 @@ sta = sta./norm(sta);  % normalize sta to be a unit vector
 nhistbins = 15; % # histogram bins to use
 fnlhist = fitNlin_hist1D(Stim_tr, sps_tr, sta, RefreshRate, nhistbins); % estimate 1D nonlinearity 
 
-%% == 3.  Fit LNP model with exponential nonlinearity  ================
 
-slen = size(Stim_tr,1);  % total number of time bins in stimulus 
-mask = [];  % time range to use for fitting (set to [] if not needed).
+%% == 3.  Set up struct and basis for LNP model with exponential nonlinearity  ========
 
 % Set up fitting structure and compute initial logli
-pp0 = makeFittingStruct_LNP(sta,RefreshRate,mask); % param struct
-negL0 = -logli_LNP(pp0,Stim_tr,sps_tr);  % negative log-likelihood
+mask = [];  % time range to use for fitting (set to [] if not needed).
+pp0 = makeFittingStruct_LNP(sta,RefreshRate,mask); % initialize param struct
+
+% == Set up temporal basis for representing filters  ====
+% (try changing these params until basis can accurately represent STA).
+ktbasprs.neye = 0; % number of "identity"-like basis vectors
+ktbasprs.ncos = 8; % number of raised cosine basis vectors
+ktbasprs.kpeaks = [0 nkt/2+3]; % location of 1st and last basis vector bump
+ktbasprs.b = 7; % determines how nonlinearly to stretch basis (higher => more linear)
+[ktbas, ktbasis] = makeBasis_StimKernel(ktbasprs, nkt); % make basis
+filtprs_basis = (ktbas'*ktbas)\(ktbas'*sta);  % filter represented in new basis
+sta_basis = ktbas*filtprs_basis;
+
+% Plot STA vs. best reconstruction in temporal basis
+tt = (-nkt+1:0);  % time points in Stim_tr filter
+subplot(211); % ----
+plot(tt,ktbasis); xlabel('time bin'); title('temporal basis'); axis tight;
+subplot(212); % ----
+plot(tt,sta,tt,sta_basis,'r--', 'linewidth', 2); 
+axis tight; title('STA and basis fit');
+xlabel('time bin'); legend('sta', 'basis fit');
+
+% Insert filter basis into fitting struct
+pp0.k = sta_basis; % insert sta filter
+pp0.kt = filtprs_basis; % filter coefficients (in temporal basis)
+pp0.ktbas = ktbas; % temporal basis
+pp0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
+
+
+%% == 4. Maximum likelihood estimation of filter under exponential nonlinearity
+
+negL0 = -logli_LNP(pp0,Stim_tr,sps_tr);  % negative log-likelihood at initial point
 fprintf('\nFitting LNP model w/ exp nonlinearity\n');
 
-% Do ML estimation of model params (with temporal basis defined in gg0)
+% Do ML estimation of model params (with temporal basis defined in pp0)
 opts = {'display', 'off', 'maxiter', 100};
 [pp_exp,negL1,C1] = fitLNP_1filt_ML(pp0,Stim_tr,sps_tr,opts); % find MLE by gradient ascent
 eb1 = sqrt(diag(C1(1:nkt,1:nkt))); % 1SD error bars
@@ -70,7 +109,7 @@ eb1 = sqrt(diag(C1(1:nkt,1:nkt))); % 1SD error bars
 %% == 4.  Run MID: estimate filter and non-parametric nonlinearity with rbf basis ===
 
 % Set parameters for radial basis functions (RBFs), for parametrizing nonlinearity
-fstruct.nfuncs = 7; % number of RBFs
+fstruct.nfuncs = 6; % number of RBFs (experiment with this)
 fstruct.epprob = [.01, .99]; % cumulative probability outside outermost basis function peaks (endpoints)
 fstruct.nloutfun = @logexp1;  % log(1+exp(x))  % nonlinear output function
 fprintf('\nFitting LNP model w/ rbf nonlinearity\n');
@@ -83,14 +122,11 @@ opts = {'display', 'off'}; % optimization parameters
 
 %% 5. ====== Make plots & report performance ============
 
-% -- plot filters (rescaled as unit vectors) ---
-tt = (-nkt+1:0)/RefreshRate;  % time points in Stim_tr filter
-
 % true 1st filter (from simulation)
 uvec = @(x)(x./norm(x)); % anonymous function to create unit vector
-trueK = uvec(simdata1.filts_true(:,1));
+trueK = uvec(simdata.filts_true(:,1));
 
-% -- Plot filter and filter estimates ---------
+% -- Plot filter and filter estimates (as unit vectors) ---------
 subplot(221); 
 plot(tt,trueK,'k',tt,sta,tt,uvec(pp_exp.k),tt,uvec(pp_rbf.k), 'linewidth',2);
 legend('true','sta','ML-exptl','ML-rbf','location', 'northwest');

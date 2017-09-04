@@ -101,8 +101,8 @@ fprintf('\nFitting LNP model w/ exp nonlinearity\n');
 
 % Do ML estimation of model params (with temporal basis defined in pp0)
 opts = {'display', 'off', 'maxiter', 100};
-[pp_exp,negL1,C1] = fitLNP_1filt_ML(pp0,Stim_tr,sps_tr,opts); % find MLE by gradient ascent
-eb1 = sqrt(diag(C1(1:nkt,1:nkt))); % 1SD error bars
+[pp_exp,negLexp,Cexp] = fitLNP_1filt_ML(pp0,Stim_tr,sps_tr,opts); % find MLE by gradient ascent
+eb1 = sqrt(diag(Cexp(1:nkt,1:nkt))); % 1SD error bars on filter (if desired)
 
 
 %% == 4.  Run MID: estimate filter and non-parametric nonlinearity with rbf basis ===
@@ -111,12 +111,15 @@ eb1 = sqrt(diag(C1(1:nkt,1:nkt))); % 1SD error bars
 fstruct.nfuncs = 5; % number of RBFs (experiment with this)
 fstruct.epprob = [.01, .99]; % cumulative probability outside outermost basis function peaks (endpoints)
 fstruct.nloutfun = @logexp1;  % log(1+exp(x))  % nonlinear output function
-fprintf('\nFitting LNP model w/ rbf nonlinearity\n');
  
-% Do fitting
-[pp_rbf,negLnonpar0] = fitNlin_CBFs(pp_exp,Stim_tr,sps_tr,fstruct);  % initialize nonlinearity while holding filter fixed
+% Initialize nonlinearity with filter fixed
+fprintf('\nInitializing RBF nonlinearity\n');
+[pp_rbf,negLrbf0] = fitNlin_CBFs(pp_exp,Stim_tr,sps_tr,fstruct);  % initialize nonlinearity while holding filter fixed
+
+% Do maximum likelihood fit of filter and nonlinearity
+fprintf('Jointly optimizing filter and RBF nonlinearity\n');
 opts = {'display', 'off'}; % optimization parameters
-[pp_rbf,negLnonpar] = fitLNP_multifilts_cbfNlin(pp_rbf,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
+[pp_rbf,negLrbf] = fitLNP_multifilts_cbfNlin(pp_rbf,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
 
 
 %% 5. ====== Make plots & report performance ============

@@ -41,10 +41,16 @@ if ~isfield(gg, 'nlfun') || isempty(gg.nlfun)
     gg.nlfun = @expfun;
 end
 
+% find temporal and spatial dimensions of filter
+[nt,nx] = size(k0); 
+
 % ==================================================================
 % Set up default temporal basis for stim kernel
 % ==================================================================
-if ~isfield(gg, 'ktbas') || isempty(gg.ktbas)
+if (nt == 1) % no temporal basis if only 1 time bin
+    gg.ktbas = 1;
+    gg.ktbasprs = 'none';
+elseif ~isfield(gg, 'ktbas') || isempty(gg.ktbas)
     nkt = size(gg.k,1);  % number of temporal elements in the k
     ktbasprs.neye = min(5,floor(nkt/2)); % # "identity" basis vectors near time of spike;
     ktbasprs.ncos = min(5,floor(nkt/2)); % # raised-cosine vectors to use

@@ -6,7 +6,7 @@
 % initialize paths
 initpaths;
 
-DATASETNUM = 1;  % select: 1 (white noise) or 2 (correlated)
+DATASETNUM = 2;  % select: 1 (white noise) or 2 (correlated)
 
 % pick dataset to load (or create if necessary)
 switch DATASETNUM
@@ -60,8 +60,7 @@ sta = sta./norm(sta);  % normalize sta to be a unit vector
 
 % Estimate piecewise-constant nonlinearity ("reconstruction" method using histograms)
 nhistbins = 15; % # histogram bins to use
-fnlhist = fitNlin_hist1D(Stim_tr, sps_tr, sta, RefreshRate, nhistbins); % estimate 1D nonlinearity 
-
+[fnlhist,xbinedges] = fitNlin_hist1D(Stim_tr, sps_tr, sta, RefreshRate, nhistbins); % estimate 1D nonlinearity 
 
 %% == 3.  Set up struct and basis for LNP model with exponential nonlinearity  ========
 
@@ -109,7 +108,7 @@ eb1 = sqrt(diag(C1(1:nkt,1:nkt))); % 1SD error bars
 %% == 4.  Run MID: estimate filter and non-parametric nonlinearity with rbf basis ===
 
 % Set parameters for radial basis functions (RBFs), for parametrizing nonlinearity
-fstruct.nfuncs = 6; % number of RBFs (experiment with this)
+fstruct.nfuncs = 5; % number of RBFs (experiment with this)
 fstruct.epprob = [.01, .99]; % cumulative probability outside outermost basis function peaks (endpoints)
 fstruct.nloutfun = @logexp1;  % log(1+exp(x))  % nonlinear output function
 fprintf('\nFitting LNP model w/ rbf nonlinearity\n');
@@ -134,7 +133,7 @@ xlabel('time before spike (ms)'); ylabel('weight');
 title('filters (rescaled as unit vectors)');  axis tight;
 
 % ---- Compute nonlinearities for plotting ---------
-xnl = (min(Stim_tr)-.25):.1:(max(Stim_tr)+.25); % x points for evaluating nonlinearity
+xnl = (xbinedges(1)-.1):.1:(xbinedges(end)+0.1); % x points for evaluating nonlinearity
 ynl_hist = fnlhist(xnl); % histogram-based (piecewise constant) nonlinearity 
 ynl_exp = exp(xnl*norm(pp_exp.k)+pp_exp.dc);  % exponential nonlinearity
 ynl_rbf = pp_rbf.nlfun(xnl*norm(pp_rbf.k));   % rbf nonlinearity

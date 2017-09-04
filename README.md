@@ -1,5 +1,5 @@
 # LNPfitting
-Linear-Nonlinear-Poisson (LNP) model fitting via Maximally-Informative-Dimensions (MID) / maximum likelihood Edit
+Linear-Nonlinear-Poisson (LNP) model fitting via maximum likelihood, aka Maximally-Informative-Dimensions (MID)
 
 **Description:** Estimates the parameters of an LNP model (a set of linear filters and a nonlinear function) from a stimulus and
  spike train using the *maximally informative dimension* (MID) estimator (introduced in Sharpee *et al* 2004). MID is a nonparametric maximum-likelihood estimator for the parameters of a linear-nonlinear-Poisson (LNP) neural response model.

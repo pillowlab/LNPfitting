@@ -24,16 +24,16 @@ switch DATASETNUM
         end
 end        
 
-%% 1. Load data and divide into training and tst datasets
+%% 1. Load data and divide into training and test datasets
 
-trainfrac = .8; % fraction of data to set aside as "tst data"
+trainfrac = .8; % fraction of data to set aside as "test data"
 
 % Load data
 load(datasetname); % load dataset 
 RefreshRate = simdata.RefreshRate; % stimulus refresh rate (in Hz).
 slen = size(simdata.Stim,1); % number of time bins in stimulus
 slen_tr = round(trainfrac*slen); % length of training dataset
-slen_tst = slen-slen_tr;  % length of tst dataset
+slen_tst = slen-slen_tr;  % length of test dataset
     
 % Set training data
 Stim_tr = simdata.Stim(1:slen_tr,:);
@@ -155,9 +155,9 @@ fprintf('sta:%.2f  exp:%.2f  rbf:%.2f\n', [ferr(sta), ferr(pp_exp.k), ferr(pp_rb
 % ==== Compute training and test performance in bits/spike =====
 
 % Compute the log-likelihood under constant rate (homogeneous Poisson) model
-nsp_tst = sum(sps_tst);  % number of spikes in tst set
+nsp_tst = sum(sps_tst);  % number of spikes in test set
 muspike_tr = nsp_tr/slen_tr;       % mean number of spikes / bin, training set
-muspike_tst = nsp_tst/slen_tst; % mean number of spikes / bin, tst set
+muspike_tst = nsp_tst/slen_tst; % mean number of spikes / bin, test set
 LL0_tr =   nsp_tr*log(muspike_tr) - slen_tr*muspike_tr; % log-likelihood, training data
 LL0_tst = nsp_tst*log(muspike_tst) - slen_tst*muspike_tst; % log-likelihood test data
 

@@ -32,8 +32,14 @@ if (size(x,1)==1) && (length(fwts)~=swid*nfuncs)
     [slen,swid] =  size(x); % size of stimulus
 end
 
+% Evaluate DC constant if necessary
+if isfield(fstruct, 'includeDC') && (fstruct.includeDC)
+    f = ones(slen,1)*fwts(end);  % DC offset
+else
+    f = zeros(slen,1); % no DC offset
+end
+
 % Evaluate Gaussian basis vectors
-f = zeros(slen,1);
 for jj = 1:swid
     f = f+exp(-.5*(bsxfun(@minus,x(:,jj),ctrs)/sig).^2)*fwts((jj-1)*nfuncs+1:jj*nfuncs);
 end

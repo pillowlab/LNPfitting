@@ -67,6 +67,9 @@ ctrs = ctrwin(1):dctrs:ctrwin(2);  % ctrs (breaks)
 % Add these params into basis structure
 fstruct.ctrs = ctrs;  % centers of Gaussian basis functions
 fstruct.sig = .75*dctrs; % stdev of Gaussian basis functions
+if ~isfield(fstruct, 'includeDC')
+    fstruct.includeDC = 0; % boolean for whether or not to include constant basis func
+end
 
 % Fit spline by maximum likelihood (Newton's method)
 dtbin = 1./RefreshRate;
@@ -81,20 +84,14 @@ gg.fprs = fprs;
 function [nlfun,fwts,neglogli] = fit_cbfNlin_LNPmodel(x,y,fstruct,dtbin)
 % [nlfun,fwts,neglogli] = fit_cbfNlin_LNPmodel(x,y,fstruct,dtbin)
 % 
-%  Fit a function y = f(x) with a cubic spline, defined using a set of
-%  breaks, smoothnefstruct and extrapolation criteria, by maximizing Poifstructon
-%  likelihood:  y ~ Poifstruct(g(spline(x))).
+%  Fit a function y = f(x) with a basis of "cylindrical basis funcs" (CBFs)
+%  likelihood:  y ~ Poiss(g(spline(x)))
 %
 % Inputs:
 %       x [Nx1] - input variable
 %       y [Nx1] - output (count) variable
-%   fstruct [struct] - spline struct with fields:
-%        .breaks - breaks between polynomial pieces
-%        .smoothnefstruct - derivs of 1 lefstruct are continuous
-%           (e.g., smoothnefstruct=3 -> 2nd derivs are continuous)
-%        .extrapDeg - degree polynomial for extrapolation on ends
-%        .nloutfun - nonlinear output function (forcing positive outputs)
-%   dtbin [1x1]- time bin size (OPTIONAL; afstructumed 1 otherwise)
+%   fstruct [struct] - struct for nonlinearity
+%   dtbin [1x1]- time bin size
 % 
 % Outputs:
 %   nlfun - function handle for nonlinearity (uses 'ppval')

@@ -11,8 +11,11 @@ function f = expquadratic(x,fprs)
 %
 % OUTPUTS:
 %      f [N x 1] - net output of nonparametric nonlinearity 
-%
-% Updated: 22 Jan 2014 (JW Pillow)
+
+% Convert to column vector if necessary
+if size(x,1) == 1
+    x = x';
+end
 
 
 M = fprs.M;

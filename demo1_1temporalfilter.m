@@ -7,53 +7,21 @@
 % initialize paths
 initpaths;
 
-DATASETNUM = 1;  % select: 1 (white noise) or 2 (correlated)
-
-% pick dataset to load (or create if necessary)
-switch DATASETNUM
-    case 1
-        datasetname = 'simdatadir/simdata1.mat';  % name of dataset
-        if ~exist(datasetname,'file') % Create simulated dataset if necessary
-            fprintf('Creating simulated dataset: ''%s''\n', datasetname);
-            mkSimData1_1Dwhitenoisestim;
-        end
-    case 2
-        datasetname = 'simdatadir/simdata2.mat';  % name of dataset
-        if ~exist(datasetname,'file') % Create simulated dataset if necessary
-            fprintf('Creating simulated dataset: ''%s''\n', datasetname);
-            mkSimData2_1Dcorrstim;
-        end
-end        
-
-%% 1. Load data and divide into training and test datasets
-
+datasetnum = 1;  % select: 1 (white noise) or 2 (correlated)
 trainfrac = .8; % fraction of data to use for training (remainder is "test data")
 
-% Load data
-load(datasetname); % load dataset 
-RefreshRate = simdata.RefreshRate; % stimulus refresh rate (in Hz).
-slen = size(simdata.Stim,1); % number of time bins in stimulus
-slen_tr = round(trainfrac*slen); % length of training dataset
-slen_tst = slen-slen_tr;  % length of test dataset
-    
-% Set training data
-Stim_tr = simdata.Stim(1:slen_tr,:);
-sps_tr = simdata.spikes(1:slen_tr,:);
-% Set test data
-Stim_tst = simdata.Stim(slen_tr+1:end,:);
-sps_tst = simdata.spikes(slen_tr+1:end,:);
+% Load data divided into training and test sets
+[Stim_tr,sps_tr,Stim_tst,sps_tst,RefreshRate,filts_true] = loadSimDataset(datasetnum,trainfrac);
 
-nsp_tr = sum(sps_tr); % Determine how many spikes in training set
-fprintf('\n------------\nLoaded %s\n',datasetname);
-fprintf('Total length: %d bins (training data: %d bins)\n', slen, slen_tr);
-fprintf('Number of spikes in training data: %d (%.2f sp/sec)\n', nsp_tr, nsp_tr/slen_tr*RefreshRate);
+slen_tr = size(Stim_tr,1);   % length of training stimulus / spike train
+slen_tst = size(Stim_tst,1); % length of test stimulus / spike train
+nsp_tr = sum(sps_tr);   % number of spikes in training set
+nsp_tst = sum(sps_tst); % number of spikes in test set
 
+%% == 1. Compute STA and estimate (piecewise constant) nonlinearity using histograms ====
 
-%% == 2. Compute STA and estimate (piecewise constant) nonlinearity using histograms ====
-
-nkt = 30; % number of time bins to use for filter 
-% This is important: normally would want to vary this to see how many bins
-% we need to capture structure in the STA
+nkt = 30; % number of time bins to use for temporal filter 
+% Normally would want to vary this to see how many bins are needed!
 
 % Compute STA
 sta = simpleSTC(Stim_tr,sps_tr,nkt);  % compute STA
@@ -63,7 +31,7 @@ sta = sta./norm(sta);  % normalize sta to be a unit vector
 nhistbins = 15; % # histogram bins to use
 [fnlhist,xbinedges] = fitNlin_hist1D(Stim_tr, sps_tr, sta, RefreshRate, nhistbins); % estimate 1D nonlinearity 
 
-%% == 3.  Set up struct and basis for LNP model with exponential nonlinearity  ========
+%% == 2.  Set up struct and basis for LNP model with exponential nonlinearity  ========
 
 % Set up fitting structure and compute initial logli
 mask = [];  % time range to use for fitting (set to [] if not needed).
@@ -95,7 +63,7 @@ pp0.ktbas = ktbas; % temporal basis
 pp0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
 
 
-%% == 4. Maximum likelihood estimation of filter under exponential nonlinearity
+%% == 3. Maximum likelihood estimation of filter under exponential nonlinearity
 
 negL0 = -logli_LNP(pp0,Stim_tr,sps_tr);  % negative log-likelihood at initial point
 fprintf('\nFitting LNP model w/ exp nonlinearity\n');
@@ -106,7 +74,7 @@ opts = {'display', 'off', 'maxiter', 100};
 eb1 = sqrt(diag(Cexp(1:nkt,1:nkt))); % 1SD error bars on filter (if desired)
 
 
-%% == 4.  Run MID: estimate filter and non-parametric nonlinearity with rbf basis ===
+%% == 4.  Run MID: estimate filter and non-parametric nonlinearity with RBF basis funcs ===
 
 % Set parameters for radial basis functions (RBFs), for parametrizing nonlinearity
 fstruct.nfuncs = 5; % number of RBFs (experiment with this)
@@ -127,7 +95,7 @@ opts = {'display', 'off'}; % optimization parameters
 
 % true 1st filter (from simulation)
 uvec = @(x)(x./norm(x)); % anonymous function to create unit vector
-trueK = uvec(simdata.filts_true(:,1));
+trueK = uvec(filts_true(:,1));
 
 % -- Plot filter and filter estimates (as unit vectors) ---------
 subplot(221); 
@@ -156,16 +124,15 @@ fprintf('\n=========== RESULTS =================\n');
 fprintf('\nFilter R^2:\n------------\n');
 fprintf('sta:%.2f  exp:%.2f  rbf:%.2f\n', [ferr(sta), ferr(pp_exp.k), ferr(pp_rbf.k)]);
 
-% ==== Compute training and test performance in bits/spike =====
+%% 6. ==== Compute training and test performance in bits/spike =====
 
 % Compute the log-likelihood under constant rate (homogeneous Poisson) model
-nsp_tst = sum(sps_tst);  % number of spikes in test set
 muspike_tr = nsp_tr/slen_tr;       % mean number of spikes / bin, training set
 muspike_tst = nsp_tst/slen_tst; % mean number of spikes / bin, test set
 LL0_tr =   nsp_tr*log(muspike_tr) - slen_tr*muspike_tr; % log-likelihood, training data
 LL0_tst = nsp_tst*log(muspike_tst) - slen_tst*muspike_tst; % log-likelihood test data
 
-% 1. Compute logli for lnp with histogram nonlinearity
+% A. Compute logli for lnp with histogram nonlinearity
 pp_sta = pp0; % make struct for the sta+histogram-nonlinearity model
 pp_sta.k = sta; % insert STA as filter
 pp_sta.dc = 0; % remove DC component (if necessary)
@@ -174,12 +141,12 @@ pp_sta.nlfun =  fnlhist;
 LLsta_tr = logli_LNP(pp_sta,Stim_tr,sps_tr); % training log-likelihood
 [LLsta_tst,rrsta_tst] = logli_LNP(pp_sta,Stim_tst,sps_tst); % test log-likelihood
 
-% 2. Compute logli for lnp with exponential nonlinearity
+% B. Compute logli for lnp with exponential nonlinearity
 %ratepred_pGLM = exp(pGLMconst + Xdsgn*pGLMfilt); % rate under exp nonlinearity
 LLexp_tr = logli_LNP(pp_exp,Stim_tr,sps_tr); % train
 [LLexp_tst,rrexp_tst] = logli_LNP(pp_exp,Stim_tst,sps_tst); % test
 
-% 3. Compute logli for lnp with rbf nonlinearity
+% C. Compute logli for lnp with rbf nonlinearity
 LLrbf_tr = logli_LNP(pp_rbf,Stim_tr,sps_tr); % train
 [LLrbf_tst,rrrbf_tst] = logli_LNP(pp_rbf,Stim_tst,sps_tst); % test
 

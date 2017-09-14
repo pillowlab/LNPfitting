@@ -24,8 +24,7 @@ nsp_tst = sum(sps_tst); % number of spikes in test set
 %% == 1. Compute STA and estimate (piecewise constant) nonlinearity using histograms ====
 
 nkt = 30; % number of time bins to use for filter 
-% This is important: normally would want to vary this to see how many bins
-% we need to capture structure in the STA
+% This is important: normally would want to vary this to find optimal filter length
 
 % Compute STA
 sta = simpleSTC(Stim_tr,sps_tr,nkt);  % compute STA

@@ -51,8 +51,8 @@ fprintf('\nComputing iSTAC estimate\n');
 
 pspike = nsp_tr/slen_tr;  % mean spike probability per bin
 
-% --- Compute exponentiated-quadratic nonlinearity with iSTAC filter --- 
-% fitNlin_expquad_iSTACmomentbased(istacFilt,DD,pspike,[nkt,1],RefreshRate); % moment based
+% Fit iSTAC exponentiated-quadratic nonlinearity 
+% pp_istac = fitNlin_expquad_iSTACmomentbased(istacFilt,DD,pspike,[nkt,1],RefreshRate); % moment based
 pp_istac = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilt,RefreshRate); % max likelihood
 
 %% == 3.  Set up struct and basis for LNP model with exponential nonlinearity  ========

@@ -53,3 +53,33 @@ subplot(222); mesh(xgrd,ygrd,nlvals);
 axis tight; set(gca,'zlim',zlm);
 xlabel('filter 2 axis');ylabel('filter 3 axis'); 
 zlabel('spike rate (sps/sec)'); title('2D iSTAC nonlinearity (filters 2 & 3)')
+
+
+%% == 3. Set up temporal basis for stimulus filters (for ML / MID estimators)
+
+pp0 = makeFittingStruct_LNP(istacFilts(:,1),RefreshRate); % initialize param struct
+
+% == Set up temporal basis for representing filters (see demo 1 more detail)  ====
+% (try changing these params until basis can accurately represent STA).
+ktbasprs.neye = 0; % number of "identity"-like basis vectors
+ktbasprs.ncos = 8; % number of raised cosine basis vectors
+ktbasprs.kpeaks = [0 nkt/2+3]; % location of 1st and last basis vector bump
+ktbasprs.b = 7; % determines how nonlinearly to stretch basis (higher => more linear)
+[ktbas, ktbasis] = makeBasis_StimKernel(ktbasprs, nkt); % make basis
+filtprs_basis = (ktbas'*ktbas)\(ktbas'*sta);  % filter represented in new basis
+sta_basis = ktbas*filtprs_basis;
+
+% Insert filter basis into fitting struct
+pp0.k = sta_basis; % insert sta filter
+pp0.kt = filtprs_basis; % filter coefficients (in temporal basis)
+pp0.ktbas = ktbas; % temporal basis
+pp0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
+
+%% == 4. MID1:  ML estimator for LNP with CBF (cylindrical basis func) nonlinearity
+
+% Write single func to do this (up to N filters)
+
+
+%% == 5. MID2:  ML estimator for LNP with RBF (radial basis func) nonlinearity
+
+% Write single func to do this (up to 3 filters)

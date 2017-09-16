@@ -1,13 +1,13 @@
 function [xgrid,ygrid,fvals,ufilts] = compNlin_2D(filts,nlfun,stim,ngridpts,fquantiles)
-% [xgrid,ygrid,fvals,ufilts] = compNlin_2D(filts,nlfun,stim,ngridpts)
+% [xgrid,ygrid,fvals,ufilts] = compNlin_2D(filts,nlfun,stim,ngridpts (opt),fquantiles (opt))
 %
 % Computes the nonlinearity in the subspace spanned by the two filters over
 % the range that the stimulus occupies
 %
 % INPUTS:
-%          filt [KxMx2] or [KM x 2] - tensor or matrix with 2 stimulus filters 
+%          filt [NxMx2] or [NM x 2] - tensor or matrix with 2 stimulus filters 
 %         nlfun [func]- function handle for 2D nonlinearity
-%          stim [NxM] - stimulus (optional)
+%          stim [TxM] - stimulus 
 %      ngridpts [1x1] - number of bins (optional: DEFAULT = 50)
 %    fquantiles [1x2] - quantiles of filter responses to use for setting x
 %                       and y range of plot (optional: DEFAULT = [0.025 0.975])
@@ -16,7 +16,7 @@ function [xgrid,ygrid,fvals,ufilts] = compNlin_2D(filts,nlfun,stim,ngridpts,fqua
 %      xgrid [ngrid x 1] - grid of filter 1 output values 
 %      ygrid [ngrid x 1] - grid of filter 2 output values
 %   vals [ngrid x ngrid] - matrix of values for nonlinearity at each grid point
-%   ufilts [nfcoeff x 2] - orthonormal basis for filter subspace 
+%   ufilts [NM x 2] - orthonormal basis for filter subspace 
 
 
 % --- Check inputs ----
@@ -29,29 +29,28 @@ if (nargin < 5)
 end
 
 % Reshape filters and compute sizes
-nxfilt = size(stim,2); % number of spatial elements in stimulus filter
+nkx = size(stim,2); % number of spatial elements in stimulus filter
 if size(filts,3) == 2
    % filters are a 3-tensor
-   ntfilt = size(filts,1);
-   nfiltcoef = nxfilt*ntfilt; % total number of elements in each filter
+   nkt = size(filts,1); % number of temporal elements in filter
+   nfiltcoef = nkx*nkt; % total number of elements in each filter
 else
     % filters are already an N x 2 matrix
     nfiltcoef = size(filts,1);
-    ntfilt = nfiltcoef / nxfilt; 
+    nkt = nfiltcoef / nkx; % number of temporal elements in filter
 end
 
 % Reshape filters as vectors 
 vecfilts = reshape(filts,nfiltcoef,2); %
 
-% Convert to orthogonal unit vectors
-uf1 = vecfilts(:,1)./norm(vecfilts(:,1)); % normalized filter 1
-uf2 = vecfilts(:,2) - uf1*(uf1'*vecfilts(:,2)); % orthogonalize filter 2
-uf2 = uf2./norm(uf2); % make unit vector of filter 2
-ufilts = [uf1 uf2]; % orthonormal basis for filter subspace
+% Convert to orthonormal basis via gram-schmidt orthogonalization
+ufilts = gsorth(vecfilts); % orthonormal basis for filter subspace
+uf1 = ufilts(:,1); % normalized filter 1
+uf2 = ufilts(:,2); % normalized orthogonalized filter 2
 
 % Filter stimulus with original filters to get range of normal output of filters
-filtresp1 = sameconv(stim,reshape(uf1,ntfilt,nxfilt));
-filtresp2 = sameconv(stim,reshape(uf2,ntfilt,nxfilt));
+filtresp1 = sameconv(stim,reshape(uf1,nkt,nkx)); % filter 1 response
+filtresp2 = sameconv(stim,reshape(uf2,nkt,nkx)); % filter 2 response
 qf1 = quantile(filtresp1,fquantiles); % quantiles of f1 response
 qf2 = quantile(filtresp2,fquantiles); % quantiles of f2 response
 xgrid = linspace(qf1(1),qf1(2),ngridpts); % x grid

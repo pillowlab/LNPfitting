@@ -1,15 +1,15 @@
-function [gg,neglogli] = fitLNP_multifilts_cbfNlin(gg,Stim,sps,optimArgs)
-% [gg,neglogli] = fitLNP_multifilts_cbfNlin(gg,Stim,sps,optimArgs)
+function [pp,neglogli] = fitLNP_multifilts_cbfNlin(pp,Stim,sps,optimArgs)
+% [pp,neglogli] = fitLNP_multifilts_cbfNlin(pp,Stim,sps,optimArgs)
 %
 %  INPUTS:
-%             gg [1x1] -  param struct
+%             pp [1x1] -  param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %      optimArgs [1x1] - cell array of optimization params (optional),
 %                        e.g., {'tolFun', '1e-12'}
 %
 %  OUTPUS:
-%          ggnew [1x1] - new param struct (with estimated params)
+%          ppnew [1x1] - new param struct (with estimated params)
 %       neglogli [1x1] - negative log-likelihood at ML estimate
 %
 % updated: Jan 16, 2014 (JW Pillow)
@@ -26,9 +26,9 @@ end
 % ===================================================
 
 % Set initial params 
-[filtprs0,optPrs] = setupfitting_LNP(gg,Stim,sps);
-optPrs.fstruct = gg.fstruct;
-fprs0 = gg.fprs;
+[filtprs0,optPrs] = setupfitting_LNP(pp,Stim,sps);
+optPrs.fstruct = pp.fstruct;
+fprs0 = pp.fprs;
 Loss = @(prs)(neglogli_LNP_multifilts_cbfNlin(prs,optPrs));  % loss function
 
 % Remove DC component (last filter coeff)
@@ -45,9 +45,9 @@ end
 % % Compute Hessian of log-likelihood to obtain posterior covariance
 % if nargout > 2 
 %     [neglogli,~,H] = neglogli_LNP_nfilt_nonparF(prs,optPrs);
-%     [ntk,nxk,nfilts] = size(gg.k);
+%     [ntk,nxk,nfilts] = size(pp.k);
 %     nkprs = ntk*nxk;
-%     Q = cell2mat(repmat(gg.ktbas,1,nxk),ntkbas,nxkbas*ones(1,nxk));
+%     Q = cell2mat(repmat(pp.ktbas,1,nxk),ntkbas,nxkbas*ones(1,nxk));
 %     B = blkdiag(Q{:});
 %     B = [[B, zeros(nkprs,1)]; [zeros(1,size(B,2)) 1]];  % basis for params
 %     postCov = B*(H\B');
@@ -55,10 +55,10 @@ end
 
 
 % Put returned vals back into param structure
-gg = reinsertFitPrs_LNP(gg,[prs(1:nfiltprs);0],optPrs);
+pp = reinsertFitPrs_LNP(pp,[prs(1:nfiltprs);0],optPrs);
 fprs = prs(nfiltprs+1:end);
-gg.nlfun = @(x)evalCBFnlin(x,gg.fstruct,fprs);
-gg.fprs = fprs;
+pp.nlfun = @(x)evalCBFnlin(x,pp.fstruct,fprs);
+pp.fprs = fprs;
 
 % %----------------------------------------------------
 % % ------ Check analytic gradients, Hessians -------

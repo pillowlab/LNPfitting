@@ -1,11 +1,11 @@
-function [gg,neglogli,filterpicked] = addfilterLNP_cbfNlin(gg,Stim,sps,kcandidates)
-% [gg,neglogli,filterpicked] = addfilterLNP_cbfNlin(gg,Stim,sps,kcandidates)
+function [pp,neglogli,filterpicked] = addfilterLNP_cbfNlin(pp,Stim,sps,kcandidates)
+% [pp,neglogli,filterpicked] = addfilterLNP_cbfNlin(pp,Stim,sps,kcandidates)
 %
 % Picks a filter to add to an LNP model based on which gives the greatest
 % increase in log-likelihood.
 %
 %  INPUTS: 
-%             gg [1x1] -  param struct
+%             pp [1x1] -  param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %    kcandidates [1x1] - each column is a candidate filter for inclusion
@@ -18,13 +18,13 @@ function [gg,neglogli,filterpicked] = addfilterLNP_cbfNlin(gg,Stim,sps,kcandidat
 %          --------------------------------------------------------
 %
 %  OUTPUTS:
-%          ggnew [1x1] - new param struct (with estimated params)
+%          ppnew [1x1] - new param struct (with estimated params)
 %   negloglivals [1xP] - negative log-likelihood at ML estimate of
 %                        nonlinearity, for each filter
 %
 % ----------------
 % Algorithm:
-%  (1) convolves the filters in gg.k with the stimulus
+%  (1) convolves the filters in pp.k with the stimulus
 %  (2) sets the centers of the cbf Gaussian basis functions (using 1st filter only)
 %  (3) fits the weights {w_i} by ML, with spike rate given by
 %       lambda = g(w11*f1(x1) + w21*f2(x1) + ... wm1*fm(x1) + ...
@@ -38,8 +38,8 @@ function [gg,neglogli,filterpicked] = addfilterLNP_cbfNlin(gg,Stim,sps,kcandidat
 %  updated: 24 Apr, 2012 (JW Pillow)
  
 % Check inputs
-RefreshRate = gg.RefreshRate; % Stimulus frame rate (frames / sec)
-kk = gg.k;  % filters in current model
+RefreshRate = pp.RefreshRate; % Stimulus frame rate (frames / sec)
+kk = pp.k;  % filters in current model
 [nkt,nkx,nfilts] = size(kk); % size and number of filters in LNP model
 nkprs = nkt*nkx; % number of parameters in a single filter
 kk = reshape(kk,nkprs,nfilts);
@@ -51,7 +51,7 @@ end
 %% ==== Pre-processing of candidate filters ====================
 
 % Project candidate filters into temporal basis ktbas:
-ktbas = gg.ktbas;
+ktbas = pp.ktbas;
 kcandidates = reshape(kcandidates,nkt,nkx,nkcan);
 for j = 1:nkcan
     kcandidates(:,:,j) = ktbas*(ktbas\kcandidates(:,:,j));
@@ -80,13 +80,13 @@ end
 
 %% ==== Compute existing filter outputs =============================
 slen = size(Stim,1); % stimulus length
-iiLi = computeMask_LNP(gg.mask,slen); % compute mask (time bins to use)
+iiLi = computeMask_LNP(pp.mask,slen); % compute mask (time bins to use)
 
 % Convolve stimulus with first filter and apply mask
 slen = size(Stim,1);
 xproj = zeros(slen,nfilts);
 for j = 1:nfilts
-    xproj(:,j) = sameconv(Stim,gg.k(:,:,j));  % filter stim with filter
+    xproj(:,j) = sameconv(Stim,pp.k(:,:,j));  % filter stim with filter
 end
 xproj = xproj(iiLi,:); % keep only those time bins within the mask
 sps = sps(iiLi); % keep spikes only within mask time bins
@@ -102,22 +102,22 @@ xprojNew = xprojNew(iiLi,:);
 
 %% ==== Evaluate logli at ML nonlinearity for each filter ============
 dtbin = 1./RefreshRate;
-fprsCurrent = gg.fprs;
-fprsNew = ones(gg.fstruct.nfuncs,1)*.1;
+fprsCurrent = pp.fprs;
+fprsNew = ones(pp.fstruct.nfuncs,1)*.1;
 fprs0 = [fprsCurrent;fprsNew];  % initial estimate at nonlinearity params
 nlfun = cell(nkcan,1); fprs=cell(nkcan,1); negL = zeros(nkcan,1);
 for j = 1:nkcan
     % Fit function by maximum likelihood (Newton's method)
-    [nlfun{j},fprs{j},negL(j)] = fit_nonparF_LNPmodel([xproj,xprojNew(:,j)],sps,gg.fstruct,dtbin,fprs0);
+    [nlfun{j},fprs{j},negL(j)] = fit_nonparF_LNPmodel([xproj,xprojNew(:,j)],sps,pp.fstruct,dtbin,fprs0);
 end
 
 [neglogli,jmin] = min(negL);
 filterpicked = knumskeep(jmin);
 
-gg.nlfun = nlfun{jmin};
-gg.fprs = fprs{jmin};
-gg.kt(:,:,nfilts+1) = ktbas\kcandidates(:,:,jmin);
-gg.k(:,:,nfilts+1) = kcandidates(:,:,jmin);  % should match ktbas*gg.kt(:,:,nfilts+1);
+pp.nlfun = nlfun{jmin};
+pp.fprs = fprs{jmin};
+pp.kt(:,:,nfilts+1) = ktbas\kcandidates(:,:,jmin);
+pp.k(:,:,nfilts+1) = kcandidates(:,:,jmin);  % should match ktbas*pp.kt(:,:,nfilts+1);
 
 
 % =========================================
@@ -165,6 +165,6 @@ lossfun = @(prs)neglogli_LNP_linearBasis(prs,Xdesign,y,fstruct.nloutfun,dtbin);
 nlfun = @(x)evalCBFnlin(x,fstruct,fprs);
 
 % -------------------
-% for debugging only
+% for debupping only
 % -------------------
 % HessCheck(lossfun,prs0); % Check that analytic grad and Hessian are correct

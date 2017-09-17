@@ -1,12 +1,12 @@
-function [gg,neglogli] = fitNlin_CBFs(gg,Stim,sps,fstruct)
-% [gg,neglogli] = fitNlin_CBFs(gg,Stim,sps,fstruct)
+function [pp,neglogli] = fitNlin_CBFs(pp,Stim,sps,fstruct)
+% [pp,neglogli] = fitNlin_CBFs(pp,Stim,sps,fstruct)
 %
 % Fit nonlinearity in an LNP model with nonlinearity parameterized by 1D
 % cylindrical basis functions (i.e., bumps for each filter output, combined
 % linearly and then passed through an output nonlinearity).
 %
 %  Inputs: 
-%             gg [1x1] -  param struct
+%             pp [1x1] -  param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %        fstruct [1x1] -  structure with params for basis functions
@@ -21,38 +21,38 @@ function [gg,neglogli] = fitNlin_CBFs(gg,Stim,sps,fstruct)
 %                        e.g., {'tolFun', '1e-12'}
 %
 %  Outputs:
-%     ggnew [1x1] - new param struct (with estimated params)
+%     ppnew [1x1] - new param struct (with estimated params)
 %  neglogli [1x1] - negative log-likelihood at ML estimate
 %
 % updated: Jan 16, 2014 (JW Pillow)
 
-RefreshRate = gg.RefreshRate; % stimulus frame rate
-[nkt,nkx,nfilts] = size(gg.k); % number of filters in LNP model
+RefreshRate = pp.RefreshRate; % stimulus frame rate
+[nkt,nkx,nfilts] = size(pp.k); % number of filters in LNP model
 
 % normalize and orthogonalize filters by gram-schmidt
-kk = reshape(gg.k,nkt*nkx,nfilts); % extract filters
+kk = reshape(pp.k,nkt*nkx,nfilts); % extract filters
 kk = gsorth(kk);
 kk = reshape(kk,nkt,nkx,nfilts);
-gg.k = kk;
+pp.k = kk;
 
 % orthogonalize k basis
-ktbas = orth(gg.ktbas);
-gg.ktbas = ktbas;
+ktbas = orth(pp.ktbas);
+pp.ktbas = ktbas;
 for j = 1:nfilts
-    gg.kt(:,:,j) = ktbas\gg.k(:,:,j);
-    gg.k(:,:,j) = ktbas*gg.kt(:,:,j);
+    pp.kt(:,:,j) = ktbas\pp.k(:,:,j);
+    pp.k(:,:,j) = ktbas*pp.kt(:,:,j);
 end
-gg.dc = 0; % set DC term to 0
+pp.dc = 0; % set DC term to 0
 
 % Compute mask times (times when likelihood will be computed)
 slen = size(Stim,1); % stimulus length
-iiLi = computeMask_LNP(gg.mask,slen); % compute mask (time bins to use)
+iiLi = computeMask_LNP(pp.mask,slen); % compute mask (time bins to use)
 
 % Convolve stimulus with filter and apply mask
 slen = size(Stim,1);
 Istm = zeros(slen,nfilts);
 for j = 1:nfilts
-    Istm(:,j) = sameconv(Stim,gg.k(:,:,j));  % filter stim with filter
+    Istm(:,j) = sameconv(Stim,pp.k(:,:,j));  % filter stim with filter
 end
 Istm = Istm(iiLi,:); % keep only those time bins within the mask
 sps = sps(iiLi); % keep spikes only within mask time bins
@@ -75,9 +75,9 @@ end
 dtbin = 1./RefreshRate;
 [nlfun,fprs,neglogli] = fit_cbfNlin_LNPmodel(Istm,sps,fstruct,dtbin);
 
-gg.nlfun = nlfun;
-gg.fstruct = fstruct;
-gg.fprs = fprs;
+pp.nlfun = nlfun;
+pp.fstruct = fstruct;
+pp.fprs = fprs;
 
 
 % =========================================

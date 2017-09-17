@@ -1,11 +1,11 @@
-function [gg,neglogli] = fitNlin_RBFs2(gg,Stim,sps)
-% [gg,neglogli] = fitNlin_RBFs(gg,Stim,sps,fstruct)
+function [pp,neglogli] = fitNlin_RBFs2(pp,Stim,sps)
+% [pp,neglogli] = fitNlin_RBFs(pp,Stim,sps,fstruct)
 %
 % Fit nonlinearity in an LNP model with nonlinearity parameterized by 2D or
 % 3D radial basis functions.
 %
 %  Inputs: 
-%             gg [1x1] -  param struct
+%             pp [1x1] -  param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %        fstruct [1x1] -  structure with params for basis functions
@@ -20,33 +20,33 @@ function [gg,neglogli] = fitNlin_RBFs2(gg,Stim,sps)
 %                        e.g., {'tolFun', '1e-12'}
 %
 %  Outputs:
-%     ggnew [1x1] - new param struct (with estimated params)
+%     ppnew [1x1] - new param struct (with estimated params)
 %  neglogli [1x1] - negative log-likelihood at ML estimate
 %
 % updated: Jan 31, 2014 (JW Pillow)
 
-RefreshRate = gg.RefreshRate; % stimulus frame rate
+RefreshRate = pp.RefreshRate; % stimulus frame rate
 dtbin = 1./RefreshRate; % length of a single time bin
-nfilts = size(gg.k,3); % number of filters in LNP model
+nfilts = size(pp.k,3); % number of filters in LNP model
 if nfilts > 4
     error('RBFs not implemented for > 4 dimensions');
 end    
 
 % Compute mask times (times when likelihood will be computed)
 slen = size(Stim,1); % stimulus length
-iiLi = computeMask_LNP(gg.mask,slen); % compute mask (time bins to use)
+iiLi = computeMask_LNP(pp.mask,slen); % compute mask (time bins to use)
 
 % Convolve stimulus with filter and apply mask
 slen = size(Stim,1);
 Istm = zeros(slen,nfilts);
 for j = 1:nfilts
-    Istm(:,j) = sameconv(Stim,gg.k(:,:,j));  % filter stim with filter
+    Istm(:,j) = sameconv(Stim,pp.k(:,:,j));  % filter stim with filter
 end
 Istm = Istm(iiLi,:); % keep only those time bins within the mask
 sps = sps(iiLi); % keep spikes only within mask time bins
 
 % Set RBF centers and sigma along each input dimension
-fstruct = gg.fstruct;
+fstruct = pp.fstruct;
 while size(fstruct.ctrs,1) < nfilts
     fstruct.ctrs(end+1,:) = fstruct.ctrs(end,:);
     fstruct.sig(end+1,1) = fstruct.sig(end,1);
@@ -55,9 +55,9 @@ end
 % Fit weights on RBF outputs by ML
 [nlfun,fprs,neglogli] = fit_rbfNlin_LNPmodel(Istm,sps,fstruct,dtbin);
 
-gg.nlfun = nlfun;
-gg.fstruct = fstruct;
-gg.fprs = fprs;
+pp.nlfun = nlfun;
+pp.fstruct = fstruct;
+pp.fprs = fprs;
 
 
 % =========================================

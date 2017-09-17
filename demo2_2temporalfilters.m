@@ -6,7 +6,7 @@
 % initialize paths
 initpaths;
 
-datasetnum = 2;  % select: 1 (white noise) or 2 (correlated)
+datasetnum = 1;  % select: 1 (white noise) or 2 (correlated)
 trainfrac = .8; % fraction of data to use for training (remainder is "test data")
 
 % Load data divided into training and test sets
@@ -28,11 +28,11 @@ nkt = 30; % number of time bins to use for filter
 
 % Compute iSTAC estimator
 fprintf('\nComputing iSTAC estimate\n');
-nFilts = 3; % number of filters to compute
-[k_istac,vals,DD] = compiSTAC(sta(:),stc,rawmu,rawcov,nFilts); % find iSTAC filters
+nistacFilts = 3; % number of filters to compute
+[istacFilts,vals,DD] = compiSTAC(sta(:),stc,rawmu,rawcov,nistacFilts); % find iSTAC filters
 
 % Fit iSTAC model nonlinearity using filters 1 and 2
-pp_istac12 = fitNlin_expquad_ML(Stim_tr,sps_tr,k_istac(:,1:2),RefreshRate); % LNP model struct
+pp_istac12 = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilts(:,1:2),RefreshRate); % LNP model struct
 
 % Visualize 2D nonlinearity
 [xgrd,ygrd,nlvals] = compNlin_2D(pp_istac12.k,pp_istac12.nlfun,Stim_tr); % compute gridded version
@@ -43,7 +43,7 @@ xlabel('filter 1 axis');ylabel('filter 2 axis');
 zlabel('spike rate (sps/sec)'); title('2D iSTAC nonlinearity (filters 1 & 2)')
 
 % Fit iSTAC model nonlinearity using filters 2 and 3
-pp_istac23 = fitNlin_expquad_ML(Stim_tr,sps_tr,k_istac(:,2:3),RefreshRate); % LNP model struct
+pp_istac23 = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilts(:,2:3),RefreshRate); % LNP model struct
 
 % Visualize 2D nonlinearity
 [xgrd,ygrd,nlvals] = compNlin_2D(pp_istac23.k,pp_istac23.nlfun,Stim_tr);
@@ -55,7 +55,7 @@ zlabel('spike rate (sps/sec)'); title('2D iSTAC nonlinearity (filters 2 & 3)')
 
 %% == 3. Set up temporal basis for stimulus filters (for ML / MID estimators)
 
-pp0 = makeFittingStruct_LNP(k_istac(:,1),RefreshRate); % initialize param struct
+pp0 = makeFittingStruct_LNP(istacFilts(:,1),RefreshRate); % initialize param struct
 
 % == Set up temporal basis for representing filters (see demo 1 more detail)  ====
 % (try changing these params until basis can accurately represent STA).
@@ -75,7 +75,16 @@ pp0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
 
 %% == 4. MID1:  ML estimator for LNP with CBF (cylindrical basis func) nonlinearity
 
-% Write single func to do this (up to N filters)
+nfilts = 2; % number of filters to recover
+
+% Set parameters for cylindrical basis funcs (CBFs) and initialize fit
+fstruct.nfuncs = 3; % number of basis functions for nonlinearity
+fstruct.epprob = [0, 1]; % cumulative probability outside outermost basis function peaks
+fstruct.nloutfun = @logexp1;  % log(1+exp(x)) % nonlinear stretching function
+fstruct.nlfuntype = 'cbf';
+
+% Fit the model (iteratively adding one filter at a time)
+[pp,negL] = fitLNP_multifilts_ML(pp0,Stim_tr,sps_tr,nfilts,fstruct,fliplr(istacFilts))
 
 
 %% == 5. MID2:  ML estimator for LNP with RBF (radial basis func) nonlinearity

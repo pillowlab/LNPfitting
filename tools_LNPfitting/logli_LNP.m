@@ -1,7 +1,7 @@
 function [logli,rr,Istm] = logli_LNP(pp,Stim,sps)
 % LOGLI_LNP - compute log-likelihood for LNP model
 %
-%   [neglogli,rr,Istm] = logli_LNP(gg,Stim,sps)
+%   [neglogli,rr,Istm] = logli_LNP(pp,Stim,sps)
 %  
 % Inputs: pp [struct] - param structure with fields:
 %                       ------------

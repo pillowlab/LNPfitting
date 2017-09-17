@@ -1,11 +1,11 @@
-function [gg,neglogli] = fitNlin_RBFs(gg,Stim,sps,fstruct)
-% [gg,neglogli] = fitNlin_RBFs(gg,Stim,sps,fstruct)
+function [pp,neglogli] = fitNlin_RBFs(pp,Stim,sps,fstruct)
+% [pp,neglogli] = fitNlin_RBFs(pp,Stim,sps,fstruct)
 %
 % Fit nonlinearity in an LNP model with nonlinearity parameterized by 2D or
 % 3D radial basis functions.
 %
 %  Inputs: 
-%             gg [1x1] -  param struct
+%             pp [1x1] -  param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %        fstruct [1x1] -  structure with params for basis functions
@@ -20,37 +20,37 @@ function [gg,neglogli] = fitNlin_RBFs(gg,Stim,sps,fstruct)
 %                        e.g., {'tolFun', '1e-12'}
 %
 %  Outputs:
-%     ggnew [1x1] - new param struct (with estimated params)
+%     ppnew [1x1] - new param struct (with estimated params)
 %  neglogli [1x1] - negative log-likelihood at ML estimate
 %
 % updated: Jan 31, 2014 (JW Pillow)
 
-RefreshRate = gg.RefreshRate; % stimulus frame rate
+RefreshRate = pp.RefreshRate; % stimulus frame rate
 dtbin = 1./RefreshRate; % length of a single time bin
-[nkt,nkx,nfilts] = size(gg.k); % number of filters in LNP model
+[nkt,nkx,nfilts] = size(pp.k); % number of filters in LNP model
 nfuncs = fstruct.nfuncs;  % number of basis functions per nonlinearity
 if nfilts > 4
     error('RBFs not implemented for > 4 dimensions');
 end    
 
 % normalize filters to be unit vectors
-kk = reshape(gg.k,nkt*nkx,nfilts); % extract filters
+kk = reshape(pp.k,nkt*nkx,nfilts); % extract filters
 kknrms = sqrt(sum(kk.^2,1));
 kk = bsxfun(@rdivide,kk,kknrms); % make unit vectors
 kk = reshape(kk,nkt,nkx,nfilts);
-gg.k = kk;
-gg.dc = 0; % set DC term to 0 (since this is redundant with nonlinearity)
-gg.kt = bsxfun(@rdivide,gg.kt,permute(kknrms,[1 3 2]));
+pp.k = kk;
+pp.dc = 0; % set DC term to 0 (since this is redundant with nonlinearity)
+pp.kt = bsxfun(@rdivide,pp.kt,permute(kknrms,[1 3 2]));
 
 % Compute mask times (times when likelihood will be computed)
 slen = size(Stim,1); % stimulus length
-iiLi = computeMask_LNP(gg.mask,slen); % compute mask (time bins to use)
+iiLi = computeMask_LNP(pp.mask,slen); % compute mask (time bins to use)
 
 % Convolve stimulus with filter and apply mask
 slen = size(Stim,1);
 Istm = zeros(slen,nfilts);
 for j = 1:nfilts
-    Istm(:,j) = sameconv(Stim,gg.k(:,:,j));  % filter stim with filter
+    Istm(:,j) = sameconv(Stim,pp.k(:,:,j));  % filter stim with filter
 end
 Istm = Istm(iiLi,:); % keep only those time bins within the mask
 sps = sps(iiLi); % keep spikes only within mask time bins
@@ -73,9 +73,9 @@ fstruct.sig = sig; % stdev of Gaussian basis functions
 % Fit weights on RBF outputs by ML
 [nlfun,fprs,neglogli] = fit_rbfNlin_LNPmodel(Istm,sps,fstruct,dtbin);
 
-gg.nlfun = nlfun;
-gg.fstruct = fstruct;
-gg.fprs = fprs;
+pp.nlfun = nlfun;
+pp.fstruct = fstruct;
+pp.fprs = fprs;
 
 
 % =========================================

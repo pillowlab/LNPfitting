@@ -1,5 +1,5 @@
-function [gg,neglogli] = refitNlin_CBFs(gg,Stim,sps)
-% [gg,neglogli] = refitNlin_CBFs(gg,Stim,sps,fstruct)
+function [pp,neglogli] = refitNlin_CBFs(pp,Stim,sps)
+% [pp,neglogli] = refitNlin_CBFs(pp,Stim,sps,fstruct)
 %
 % re-Fits nonlinearity in an LNP model with nonlinearity parameterized by 1D
 % cylindrical basis functions (i.e., bumps for each filter output, combined
@@ -10,31 +10,31 @@ function [gg,neglogli] = refitNlin_CBFs(gg,Stim,sps)
 % outputs 
 %
 %  Inputs: 
-%             gg [1x1] -  param struct
+%             pp [1x1] -  param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %      optimArgs [1x1] - cell array of optimization params (optional),
 %                        e.g., {'tolFun', '1e-12'}
 %
 %  Outputs:
-%     ggnew [1x1] - new param struct (with estimated params)
+%     ppnew [1x1] - new param struct (with estimated params)
 %  neglogli [1x1] - negative log-likelihood at ML estimate
 %
 % updated: Jan 16, 2014 (JW Pillow)
 
-RefreshRate = gg.RefreshRate; % stimulus frame rate
-[nkt,nkx,nfilts] = size(gg.k); % number of filters in LNP model 
-fstruct = gg.fstruct; % has params for nonlinearity
+RefreshRate = pp.RefreshRate; % stimulus frame rate
+[nkt,nkx,nfilts] = size(pp.k); % number of filters in LNP model 
+fstruct = pp.fstruct; % has params for nonlinearity
 
 % Compute mask times (times when likelihood will be computed)
 slen = size(Stim,1); % stimulus length
-iiLi = computeMask_LNP(gg.mask,slen); % compute mask (time bins to use)
+iiLi = computeMask_LNP(pp.mask,slen); % compute mask (time bins to use)
 
 % Convolve stimulus with filter and apply mask
 slen = size(Stim,1);
 Istm = zeros(slen,nfilts);
 for j = 1:nfilts
-    Istm(:,j) = sameconv(Stim,gg.k(:,:,j));  % filter stim with filter
+    Istm(:,j) = sameconv(Stim,pp.k(:,:,j));  % filter stim with filter
 end
 Istm = Istm(iiLi,:); % keep only those time bins within the mask
 sps = sps(iiLi); % keep spikes only within mask time bins
@@ -43,9 +43,9 @@ sps = sps(iiLi); % keep spikes only within mask time bins
 dtbin = 1./RefreshRate;
 [nlfun,fprs,neglogli] = fit_cbfNlin_LNPmodel(Istm,sps,fstruct,dtbin);
 
-gg.nlfun = nlfun;
-gg.fstruct = fstruct;
-gg.fprs = fprs;
+pp.nlfun = nlfun;
+pp.fstruct = fstruct;
+pp.fprs = fprs;
 
 
 % =========================================

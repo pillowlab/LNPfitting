@@ -1,18 +1,18 @@
-function [gg,neglogli] = fitLNP_multifilts_rbfNlincon(gg,Stim,sps,optimArgs)
-% [gg,neglogli] = fitLNP_multifilts_rbfNlincon(gg,Stim,sps,optimArgs)
+function [pp,neglogli] = fitLNP_multifilts_rbfNlincon(pp,Stim,sps,optimArgs)
+% [pp,neglogli] = fitLNP_multifilts_rbfNlincon(pp,Stim,sps,optimArgs)
 %
 % ML fitting of filters and RBF nonlinearity, with filters constrained to
 % be unit vectors
 %
 %  INPUTS:
-%             gg [1x1] -  param struct
+%             pp [1x1] - param struct
 %           Stim [NxM] - stimulus
 %            sps [Nx1] - spike count vector 
 %      optimArgs [1x1] - cell array of optimization params (optional),
 %                        e.g., {'tolFun', '1e-12'}
 %
 %  OUTPUS:
-%          ggnew [1x1] - new param struct (with estimated params)
+%          ppnew [1x1] - new param struct (with estimated params)
 %       neglogli [1x1] - negative log-likelihood at ML estimate
 %
 % updated: Feb 13, 2014 (JW Pillow)
@@ -30,9 +30,9 @@ end
 % ===================================================
 
 % Set initial params 
-[filtprs0,optPrs] = setupfitting_LNP(gg,Stim,sps);
-optPrs.fstruct = gg.fstruct;
-fprs0 = gg.fprs;
+[filtprs0,optPrs] = setupfitting_LNP(pp,Stim,sps);
+optPrs.fstruct = pp.fstruct;
+fprs0 = pp.fprs;
 Loss = @(prs)(neglogli_LNP_multifilts_rbfNlin(prs,optPrs));  % loss function
 
 % Remove DC component (last filter coeff)
@@ -50,10 +50,10 @@ if (exitflag == 0)
 end
 
 % Put returned vals back into param structure
-gg = reinsertFitPrs_LNP(gg,[prs(1:nfiltprs);0],optPrs);
+pp = reinsertFitPrs_LNP(pp,[prs(1:nfiltprs);0],optPrs);
 fprs = prs(nfiltprs+1:end);
-gg.nlfun = @(x)evalRBFnlin(x,gg.fstruct,fprs);
-gg.fprs = fprs;
+pp.nlfun = @(x)evalRBFnlin(x,pp.fstruct,fprs);
+pp.fprs = fprs;
 
 % %----------------------------------------------------
 % % ------ Check analytic gradients -------

@@ -1,17 +1,17 @@
-function [gg,lival,muLi,HLi,postCov,logEv] = fitLNP_1filt_MAP(gg,Stim,sps,CpriorInv,optimArgs)
-%  [gg,lival,muLi,HLi,postCov,logEv] = fitLNP_1filt_MAP(gg,Stim,sps,CpriorInv,optimArgs)
+function [pp,lival,muLi,HLi,postCov,logEv] = fitLNP_1filt_MAP(pp,Stim,sps,CpriorInv,optimArgs)
+%  [pp,lival,muLi,HLi,postCov,logEv] = fitLNP_1filt_MAP(pp,Stim,sps,CpriorInv,optimArgs)
 % 
 %  Computes the MAP estimate for LNP filter params, using grad and hessians.
 %
 %  Inputs: 
-%     gg = param struct
+%     pp = param struct
 %     Stim = stimulus
 %     sps = spike vector (column vector, same height as Stim matrix)
 %     CpriorInv = inverse of prior covariance matrix
 %     optimArgs = cell array of optimization params (optional)
 %
 %  Outputs:
-%     ggnew = new param struct (with ML params);
+%     ppnew = new param struct (with ML params);
 %     fval = negative log-likelihood (NOT log-posterior) at MAP estimate
 %     muLi = mean of log-likelihood (based on MAP estimate)
 %     HLi = inverse covariance of log-likelihood
@@ -28,7 +28,7 @@ end
 % ===================================================
 
 % Set initial params 
-[prs0,optPrs] = setupfitting_LNP(gg,Stim,sps);
+[prs0,optPrs] = setupfitting_LNP(pp,Stim,sps);
 Loss = @(prs)(Loss_LNP1filt_logpost(prs,CpriorInv,optPrs));  % loss function
 
 % minimize negative log likelihood 
@@ -38,7 +38,7 @@ if (exitflag == 0)
 end
 
 % Put returned vals back into param structure
-gg = reinsertFitPrs_LNP(gg,prs,optPrs);
+pp = reinsertFitPrs_LNP(pp,prs,optPrs);
 
 % ======= Compute (optional) additional output variables =============
 
@@ -52,11 +52,11 @@ end
 
 % Compute posterior covariance
 if nargout > 4
-    [ntk,ncols] = size(gg.k);
+    [ntk,ncols] = size(pp.k);
     nkprs = ntk*ncols;
-    Q = repcell(gg.ktbas,ncols);
+    Q = repcell(pp.ktbas,ncols);
     B = blkdiag(Q{:});
-    B = [B, zeros(nkprs,1); zeros(1,size(gg.ktbas,2)) 1];  % basis for params
+    B = [B, zeros(nkprs,1); zeros(1,size(pp.ktbas,2)) 1];  % basis for params
     H(1:nkprs,1:nkprs) = H(1:nkprs,1:nkprs)+CpriorInv;
     postCov = B*inv(H)*B';
 end

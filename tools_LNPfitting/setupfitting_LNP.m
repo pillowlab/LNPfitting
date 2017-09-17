@@ -55,7 +55,7 @@ end
 % ---- Set up filter and stim processing params ------------------- 
 nkx = size(pp.k,2);  % number stim pixels (# x params)
 nkt = size(pp.ktbas,2); % # time params per stim pixel (# t params)
-npp = size(pp.k,3);
+nfilts = size(pp.k,3);
 ncols = nkx*nkt;
 
 [slen,swid] = size(Stim);
@@ -82,7 +82,7 @@ OPTprs.nlfun = pp.nlfun;
 % ---- Set fields of OPTprs -------------------------------------
 OPTprs.nkx = nkx;
 OPTprs.nkt = nkt;
-OPTprs.npp = npp;
+OPTprs.nfilts = nfilts;
 OPTprs.ktbas = pp.ktbas;
 OPTprs.slen = slen;      % Total stimulus length (course bins)
 OPTprs.RefreshRate = pp.RefreshRate;

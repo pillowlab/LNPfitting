@@ -77,19 +77,19 @@ fprintf('===========\n Fitting 1-filter model\n ==========\n');
 % Do joint fitting of nonlinearity and filter
 [pp,negL] = jointFitFun(pp0); 
 
-for jj = 2:nfilts
-
-    % Store previous param struct and neg logli value
-    pp_prev{jj} = pp;
-    negL_prev(jj) = negL;
-
-    % Add filter to model
-    fprintf('===========\n Fitting %d-filter model\n ==========\n',jj);
-
-    [pp2,negL2_tr0,filterPicked] = addfilterLNP_cbfNlin(pp1,Stim_tr,sps_tr,istacFilts); % decide with filter to add
-    [pp2,negL2_tr] = fitLNP_multifilts_cbfNlin(pp2,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
-    negL2_test = neglogli_LNP(pp2,Stim_test,sps_test); % compute test log-likelihood
-
-end
+% for jj = 2:nfilts
+% 
+%     % Store previous param struct and neg logli value
+%     pp_prev{jj} = pp;
+%     negL_prev(jj) = negL;
+% 
+%     % Add filter to model
+%     fprintf('===========\n Fitting %d-filter model\n ==========\n',jj);
+% 
+%     [pp2,negL2_tr0,filterPicked] = addfilterLNP_cbfNlin(pp1,Stim_tr,sps_tr,istacFilts); % decide with filter to add
+%     [pp2,negL2_tr] = fitLNP_multifilts_cbfNlin(pp2,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
+%     negL2_test = neglogli_LNP(pp2,Stim_test,sps_test); % compute test log-likelihood
+% 
+% end
 
     

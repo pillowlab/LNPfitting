@@ -1,0 +1,95 @@
+function [pp,negL,pp_prev,negL_prev] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,fstruct,initFilts,optimArgs)
+% [pp,neglogli] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,nlfuntype,optimArgs)
+%
+% Maximum likelihood / MID fitting of LNP model with multiple filters and
+% either RBF or CBF parametrized nonlinearity
+%
+%  INPUTS:
+%             pp [1x1] - param struct for LNP model
+%           Stim [NxM] - stimulus
+%            sps [Nx1] - spike count vector 
+%         nfilts [1x1] - max number of filters to fit
+%  fstruct [structure] - nonlinearity structure with fields
+%                        .nlfuntype ('rbf' or 'cbf')
+%                        .nfuncs (# of basis functions)
+%                        .epprob (quantiles for 1st and last basis func, e.g. [0.01, 0.99])
+%                        .nloutfun (final output nonlinearity)
+%   initFilts [NM x P] - candidate filters for initializing fits (optional), where P >= nfilts
+%      optimArgs [1x1] - cell array of optimization params (optional),
+%                        e.g., {'tolFun', '1e-12'}
+%
+%  OUTPUS:
+%         ppnew [1x1] - new param struct (with estimated params)
+%          negL [1x1] - negative log-likelihood at ML estimate
+%       pp_prev [L-1x1] - cell array of model structs with 1 to L-1 filters
+%                         (obtained en route to fitting full model) 
+%     negL_prev [L-1x1] - array of negative log-likelihood of smaller models
+%                         (with 1 to L-1 filters) on the training data  
+
+
+% Extract stimulus temporal basis and filter size
+ktbas = pp.ktbas;
+nkt = size(ktbas,1); % number of time bins in filter
+nkx = size(Stim,2);  % number of spatial pixels in filter
+
+% Set optimization arguments if necessary
+if nargin<7
+    optimArgs = {'display','on'};
+end
+
+% Compute initial filters using iSTAC if none provided
+if nargin<6 || isempty(initFilts)
+    fprintf('\nRunning iSTAC to get initial filter estimates...\n');
+    [sta,stc,rawmu,rawcov] = simpleSTC(Stim,sps,nkt);  % compute raw and spike-trippered moments
+    initFilts = compiSTAC(sta(:),stc,rawmu,rawcov,nfilts); % compute iSTAC filters
+elseif size(initFilts,2)<nfilts
+    warning('fewer filters in ''initFilts'' than # filters requested; aumenting with iSTAC filters');
+    % now run iSTAC to supplement filters
+    fprintf('\nRunning iSTAC to supplement initial filter estimates...\n');    
+    [sta,stc,rawmu,rawcov] = simpleSTC(Stim,sps,nkt);  % compute raw and spike-trippered moments
+    initFilts0 = compiSTAC(sta(:),stc,rawmu,rawcov,nfilts); % compute iSTAC filters
+    initFilts = [initFilts, initFilts0];
+end
+
+% Set optimization functions based on type of nonlinearity requested
+switch lower(fstruct.nlfuntype)
+    case 'cbf'
+        initNLfun = @(x)fitNlin_CBFs(x,Stim,sps,fstruct);
+        jointFitFun = @(x)fitLNP_multifilts_cbfNlin(x,Stim,sps,optimArgs);
+        
+    case 'rbf'
+        initNLfun = @fitNlin_CBFs;
+        jointFitFun = @fitLNP_multifilts_rbfNlin;
+end
+
+% Insert first filter into param struct as represented in basis
+filt0full = reshape(initFilts(:,1),nkt,nkx); % full initial filter
+pp.kt = (ktbas\filt0full); % temporal basis coeffs for filter
+pp.k = ktbas*pp.kt; % full filter represented in temporal basis
+
+% Initialize variables for smaller models
+pp_prev = cell(nfilts-1,1); % models with fewer filter
+negL_prev = zeros(nfilts-1,1); % training negative log-likelihood
+
+fprintf('===========\n Fitting 1-filter model\n ==========\n');
+% Initialize estimate of nonlinearity
+[pp0,~] = initNLfun(pp);
+% Do joint fitting of nonlinearity and filter
+[pp,negL] = jointFitFun(pp0); 
+
+for jj = 2:nfilts
+
+    % Store previous param struct and neg logli value
+    pp_prev{jj} = pp;
+    negL_prev(jj) = negL;
+
+    % Add filter to model
+    fprintf('===========\n Fitting %d-filter model\n ==========\n',jj);
+
+    [pp2,negL2_tr0,filterPicked] = addfilterLNP_cbfNlin(pp1,Stim_tr,sps_tr,istacFilts); % decide with filter to add
+    [pp2,negL2_tr] = fitLNP_multifilts_cbfNlin(pp2,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
+    negL2_test = neglogli_LNP(pp2,Stim_test,sps_test); % compute test log-likelihood
+
+end
+
+    

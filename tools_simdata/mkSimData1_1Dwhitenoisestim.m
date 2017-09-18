@@ -5,6 +5,8 @@
 % three temporal filters, each of length 30 time bins. 
 %
 % Dataset created is required for tutorial script demo1_1temporalfilter.m
+%
+% Should be called from main code repository ("LNPfitting")
 
 
 % Initialize paths (and create 'simdatadir' folder if necessary)

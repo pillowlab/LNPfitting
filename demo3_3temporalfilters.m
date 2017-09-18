@@ -2,10 +2,14 @@
 %
 % Tutorial script illustrating maximum likelihood / maximally informative
 % dimensions (MID) estimation for LNP model with THREE temporal filters
-% using both CBF and RBF nonlinearities
+% using both CBF and RBF nonlinearities.
 %
-% Compares estimates to true filters using basis reconstructions and shows
-% rate predictions of three different on test data
+% - also computes iSTAC estimate of three-filter model, for comparison.
+% - Compares filter estimates using basis reconstructions of true filters
+% - Computes test log-likelihood in units of bits / spike (equal to
+%       information gain over a homogeneous Poisson model)
+% - plots rate predictions of three different models (iSTC, ml-cbf, ml-rbf)
+%       on test data. 
 
 % initialize paths
 initpaths;

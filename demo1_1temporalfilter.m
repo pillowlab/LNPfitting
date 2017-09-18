@@ -104,15 +104,19 @@ eb1 = sqrt(diag(Cexp(1:nkt,1:nkt))); % 1SD error bars on filter (if desired)
 fstruct.nfuncs = 5; % number of RBFs (experiment with this)
 fstruct.epprob = [.01, 0.99]; % cumulative probability outside outermost basis function peaks (endpoints)
 fstruct.nloutfun = @logexp1;  % log(1+exp(x))  % nonlinear output function
- 
+fstruct.nlfuntype = 'cbf'; % for 1D nonlinearity, cbf is the same as rbf
+
 % Initialize nonlinearity with filter fixed
 fprintf('\nInitializing RBF nonlinearity\n');
-[pp_rbf,negLrbf0] = fitNlin_CBFs(pp_exp,Stim_tr,sps_tr,fstruct);  % initialize nonlinearity while holding filter fixed
+[pp_cbf,negLrbf0] = fitNlin_CBFs(pp_exp,Stim_tr,sps_tr,fstruct);  % initialize nonlinearity while holding filter fixed
 
 % Do maximum likelihood fit of filter and nonlinearity
 fprintf('Jointly optimizing filter and RBF nonlinearity\n');
 opts = {'display', 'off'}; % optimization parameters
-[pp_rbf,negLrbf] = fitLNP_multifilts_cbfNlin(pp_rbf,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
+[pp_cbf,negLcbf] = fitLNP_multifilts_cbfNlin(pp_cbf,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
+
+% % In practice, can get both of the steps above with the single function call:
+% [ppcbf,negLcbf] = fitLNP_multifiltsCBF_ML(pp0,Stim_tr,sps_tr,1,fstruct,pp0.k);
 
 
 %% 6. ====== Make plots & report performance ============
@@ -123,7 +127,7 @@ trueK = uvec(filts_true(:,1)); % true filter (as unit vector)
 
 % -- Plot filter and filter estimates (as unit vectors) ---------
 subplot(221); 
-plot(tt,trueK,'k',tt,sta,tt,istacFilt,tt,uvec(pp_exp.k),tt,uvec(pp_rbf.k), 'linewidth',2);
+plot(tt,trueK,'k',tt,sta,tt,istacFilt,tt,uvec(pp_exp.k),tt,uvec(pp_cbf.k), 'linewidth',2);
 legend('true','sta','istac','ML-exptl','ML-rbf','location', 'northwest');
 xlabel('time before spike (ms)'); ylabel('weight');
 title('filters (rescaled as unit vectors)');  axis tight;
@@ -133,28 +137,28 @@ xnl = (xbinedges(1)-.1):.1:(xbinedges(end)+0.1); % x points for evaluating nonli
 ynl_hist = fnlhist(xnl); % histogram-based (piecewise constant) nonlinearity 
 ynl_istac = pp_istac.nlfun(xnl*norm(pp_istac.k)); % istac exponentiated-quadratic nonlinearity
 ynl_exp = exp(xnl*norm(pp_exp.k)+pp_exp.dc);  % exponential nonlinearity
-ynl_rbf = pp_rbf.nlfun(xnl*norm(pp_rbf.k));   % rbf nonlinearity
+ynl_cbf = pp_cbf.nlfun(xnl*norm(pp_cbf.k));   % rbf nonlinearity
 
 % ---- Plot nonlinearities --------------------------
 subplot(222); 
-plot(xnl, ynl_hist,xnl,ynl_istac,xnl,ynl_exp,xnl,ynl_rbf, 'linewidth',2);
+plot(xnl, ynl_hist,xnl,ynl_istac,xnl,ynl_exp,xnl,ynl_cbf, 'linewidth',2);
 axis tight; set(gca,'ylim',[0 200]);
 ylabel('rate (sps/s)'); xlabel('filter output');
-legend('hist','istac-expquad','ML-exptl','ML-rbf','location', 'northwest');
+legend('hist','istac-expquad','ML-exptl','ML-cbf','location', 'northwest');
 title('estimated nonlinearities');
 
 % ==== report filter estimation error =========
 fRsq = @(k)(1- sum((uvec(k)-trueK).^2)./sum((trueK-mean(trueK)).^2));  % normalized error
-Rsqvals =  [fRsq(sta),fRsq(istacFilt),fRsq(pp_exp.k),fRsq(pp_rbf.k)];
+Rsqvals =  [fRsq(sta),fRsq(istacFilt),fRsq(pp_exp.k),fRsq(pp_cbf.k)];
 
 fprintf('\n=========== RESULTS =================\n');
 fprintf('\nFilter R^2:\n------------\n');
-fprintf('sta:%.2f  istac:%.2f  exp:%.2f  rbf:%.2f\n', Rsqvals);
+fprintf('sta:%.2f  istac:%.2f  exp:%.2f  cbf:%.2f\n', Rsqvals);
 
 % Plot filter R^2 values
 subplot(247);
-axlabels = {'sta','istac','exp','rbf'};
-bar(Rsqvals); ylabel('bits / sp'); title('filter R^2');
+axlabels = {'sta','istac','exp','cbf'};
+bar(Rsqvals); ylabel('R^2'); title('filter R^2');
 set(gca,'xticklabel',axlabels, 'ylim', [.9 1]);
 
 
@@ -184,9 +188,9 @@ LListac_tr = logli_LNP(pp_istac,Stim_tr,sps_tr); % training log-likelihood
 LLexp_tr = logli_LNP(pp_exp,Stim_tr,sps_tr); % train
 [LLexp_tst,rrexp_tst] = logli_LNP(pp_exp,Stim_tst,sps_tst); % test
 
-% D. Compute logli for lnp with rbf nonlinearity
-LLrbf_tr = logli_LNP(pp_rbf,Stim_tr,sps_tr); % train
-[LLrbf_tst,rrrbf_tst] = logli_LNP(pp_rbf,Stim_tst,sps_tst); % test
+% D. Compute logli for lnp with cbf/rbf nonlinearity
+LLcbf_tr = logli_LNP(pp_cbf,Stim_tr,sps_tr); % train
+[LLcbf_tst,rrcbf_tst] = logli_LNP(pp_cbf,Stim_tst,sps_tst); % test
 
 % Single-spike information:
 % ------------------------
@@ -200,13 +204,13 @@ f1 = @(x)((x-LL0_tr)/nsp_tr/log(2)); % compute training single-spike info
 f2 = @(x)((x-LL0_tst)/nsp_tst/log(2)); % compute test single-spike info
 % (if we don't divide by log 2 we get it in nats)
 
-SSinfo_tr = [f1(LLsta_tr), f1(LListac_tr), f1(LLexp_tr), f1(LLrbf_tr)];
-SSinfo_tst = [f2(LLsta_tst),f2(LListac_tst), f2(LLexp_tst), f2(LLrbf_tst)];
+SSinfo_tr = [f1(LLsta_tr), f1(LListac_tr), f1(LLexp_tr), f1(LLcbf_tr)];
+SSinfo_tst = [f2(LLsta_tst),f2(LListac_tst), f2(LLexp_tst), f2(LLcbf_tst)];
 
 fprintf('\nSingle-spike information (bits/spike):\n');
 fprintf('------------------------------------- \n');
-fprintf('Train: sta-hist:%.2f  istac: %.2f  exp:%.2f  rbf:%.2f\n', SSinfo_tr);
-fprintf('Test:  sta-hist:%.2f  istac: %.2f  exp:%.2f  rbf:%.2f\n', SSinfo_tst);
+fprintf('Train: sta-hist:%.2f  istac: %.2f  exp:%.2f  cbf:%.2f\n', SSinfo_tr);
+fprintf('Test:  sta-hist:%.2f  istac: %.2f  exp:%.2f  cbf:%.2f\n', SSinfo_tst);
 
 % Plot test single-spike information
 subplot(248);
@@ -220,8 +224,8 @@ stem(iiplot,sps_tst(iiplot), 'k'); hold on;
 plot(iiplot,rrsta_tst(iiplot)/RefreshRate, ...
     iiplot,rristac_tst(iiplot)/RefreshRate, ...
     iiplot,rrexp_tst(iiplot)/RefreshRate, ...
-    iiplot,rrrbf_tst(iiplot)/RefreshRate,'linewidth',2); 
+    iiplot,rrcbf_tst(iiplot)/RefreshRate,'linewidth',2); 
  hold off; title('rate predictions on test data');
 ylabel('spikes / bin'); xlabel('time (bins)');
 set(gca,'xlim', iiplot([1 end]));
-legend('spike count', 'sta-hist', 'istac','ML-exp', 'ML-rbf');
+legend('spike count', 'sta-hist', 'istac','ML-exp', 'ML-cbf');

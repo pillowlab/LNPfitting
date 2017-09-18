@@ -1,7 +1,11 @@
-% demo2_2temporalfilters.m
+% demo3_3temporalfilters.m
 %
 % Tutorial script illustrating maximum likelihood / maximally informative
-% dimensions (MID) estimation for LNP model with TWO temporal filters
+% dimensions (MID) estimation for LNP model with THREE temporal filters
+% using both CBF and RBF nonlinearities
+%
+% Compares estimates to true filters using basis reconstructions and shows
+% rate predictions of three different on test data
 
 % initialize paths
 initpaths;
@@ -32,55 +36,33 @@ fprintf('\nComputing iSTAC estimate\n');
 [istacFilts,vals,DD] = compiSTAC(sta(:),stc,rawmu,rawcov,nistacFilts); % find iSTAC filters
 
 % Fit iSTAC model nonlinearity using filters 1 and 2
-pp_istac12 = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilts(:,1:2),RefreshRate); % LNP model struct
-
+pp_istac = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilts,RefreshRate); % LNP model struct
 % Compute training and test log-likelihood
-LListac12_tr = logli_LNP(pp_istac12,Stim_tr,sps_tr); % training log-likelihood
-LListac12_tst = logli_LNP(pp_istac12,Stim_tst,sps_tst); % test log-likelihood
+LListac_tr = logli_LNP(pp_istac,Stim_tr,sps_tr); % training log-likelihood
+[LListac_tst,rate_istac] = logli_LNP(pp_istac,Stim_tst,sps_tst); % test log-likelihood
 
-% Fit iSTAC model nonlinearity using filters 2 and 3
-pp_istac23 = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilts(:,2:3),RefreshRate); % LNP model struct
-
-% Compute training and test log-likelihood
-LListac23_tr = logli_LNP(pp_istac23,Stim_tr,sps_tr); % training log-likelihood
-LListac23_tst = logli_LNP(pp_istac23,Stim_tst,sps_tst); % test log-likelihood
-
-% -----  Visualize filters and 2D nonlinearity for both models ---------------------
-[xgrd12,ygrd12,nlvals12] = compNlin_2D(pp_istac12.k,pp_istac12.nlfun,Stim_tr); % compute gridded 2D nonlinearity
-[xgrd23,ygrd23,nlvals23] = compNlin_2D(pp_istac23.k,pp_istac23.nlfun,Stim_tr); % compute gridded 2D nonlinearity
-
-subplot(241); 
+% -----  Plot filters ------------
+subplot(231); 
 tt = -nkt+1:0;
-plot(tt,filts_true,'k--',tt,istacFilts(:,1:2),'linewidth',2); 
-axis tight; title('istac Filters 1 & 2');
+
+% Compute true filters reconstructed in basis of iSTAC estimates
+filtsHat_istac = istacFilts*(istacFilts\filts_true);
+
+plot(tt,filts_true,'k--',tt,filtsHat_istac,'linewidth',2); 
+axis tight; title('Filter reconstructions: istac estimates');
 xlabel('time before spike (bins)');
 
-subplot(245);
-mesh(xgrd12,ygrd12,nlvals12); 
-zlm = [0 max(nlvals12(:))*1.01];
-axis tight; set(gca,'zlim',zlm);
-xlabel('filter 1 axis');ylabel('filter 2 axis'); 
-zlabel('spike rate (sps/sec)'); title('2D iSTAC nonlinearity: filts 1 & 2')
-
-subplot(242); 
-plot(tt,filts_true,'k--',tt,istacFilts(:,2:3),'linewidth',2); 
-axis tight; title('istac Filters 2 & 3');
-
-subplot(246); mesh(xgrd23,ygrd23,nlvals23); 
-axis tight; set(gca,'zlim',zlm);
-xlabel('filter 2 axis');ylabel('filter 3 axis'); 
-title('2D iSTAC nonlinearity: filts 2 & 3')
 
 %% == 3. Set up temporal basis for stimulus filters (for ML / MID estimators)
 
 pp0 = makeFittingStruct_LNP(istacFilts(:,1),RefreshRate); % initialize param struct
 
 % == Set up temporal basis for representing filters (see demo 1 more detail)  ====
-% (try changing these params until basis can accurately represent STA).
+% (try changing these params until basis can accurately represent all iSTAC axes).
 ktbasprs.neye = 0; % number of "identity"-like basis vectors
-ktbasprs.ncos = 10; % number of raised cosine basis vectors
-ktbasprs.kpeaks = [0 nkt/2+4]; % location of 1st and last basis vector bump
-ktbasprs.b = 5; % determines how nonlinearly to stretch basis (higher => more linear)
+ktbasprs.ncos = 12; % number of raised cosine basis vectors
+ktbasprs.kpeaks = [1 2*nkt/3]; % location of 1st and last basis vector bump
+ktbasprs.b = 1.5; % determines how nonlinearly to stretch basis (higher => more linear)
 [ktbas, ktbasis] = makeBasis_StimKernel(ktbasprs, nkt); % make basis
 filtprs_basis = (ktbas'*ktbas)\(ktbas'*sta);  % filter represented in new basis
 sta_basis = ktbas*filtprs_basis;
@@ -93,10 +75,10 @@ pp0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
 
 %% == 4. ML/MID 1:  ML estimator for LNP with CBF (cylindrical basis func) nonlinearity
 
-nfilts = 2; % number of filters to recover
+nfilts = 3; % number of filters to recover
 
 % Set parameters for cylindrical basis funcs (CBFs) and initialize fit
-fstructCBF.nfuncs = 5; % number of basis functions for nonlinearity
+fstructCBF.nfuncs = 3; % number of basis functions for nonlinearity
 fstructCBF.epprob = [.01, 0.99]; % cumulative probability outside outermost basis function peaks
 fstructCBF.nloutfun = @logexp1;  % log(1+exp(x)) % nonlinear stretching function
 fstructCBF.nlfuntype = 'cbf';
@@ -106,19 +88,16 @@ fstructCBF.nlfuntype = 'cbf';
 
 % Compute test log-likelihood
 LLcbf_tr = logli_LNP(ppcbf,Stim_tr,sps_tr); % training log-likelihood
-LLcbf_tst = logli_LNP(ppcbf,Stim_tst,sps_tst); % test log-likelihood
+[LLcbf_tst,rate_cbf] = logli_LNP(ppcbf,Stim_tst,sps_tst); % test log-likelihood
 
-% Compute gridded nonlinearity (for plotting purposes)
-[xcbf,ycbf,nlcbf] = compNlin_2D(ppcbf.k,ppcbf.nlfun,Stim_tr); % compute gridded 2D nonlinearity
+% Compute true filters reconstructed in basis of iSTAC estimates
+filts_cbf = squeeze(ppcbf.k);  % filter estimates
+filtsHat_cbf = filts_cbf*(filts_cbf\filts_true); % reconstructed true filts
 
-% Plot filters and nonlinearity
-subplot(243);  % Plot filters
-plot(tt,filts_true,'k--',tt,squeeze(ppcbf.k),'linewidth',2); 
-axis tight; title('ML-cbf filters');
-subplot(247); mesh(xcbf,ycbf,nlcbf); 
-axis tight; set(gca,'zlim',zlm);
-xlabel('filter 1 axis');ylabel('filter 2 axis'); 
-zlabel('spike rate (sps/sec)'); title('2D cbf nonlinearity');
+% Plot reconstruction of true filters
+subplot(232);
+plot(tt,filts_true,'k--',tt,filtsHat_cbf,'linewidth',2); 
+axis tight; title('Filter reconstructions: ML-cbf estimates');
 
 
 %% == 5. ML / MID 2:  ML estimator for LNP with RBF (radial basis func) nonlinearity
@@ -134,34 +113,50 @@ fstructRBF.nlfuntype = 'rbf';
 
 % Compute test log-likelihood
 LLrbf_tr = logli_LNP(pprbf,Stim_tr,sps_tr); % training log-likelihood
-LLrbf_tst = logli_LNP(pprbf,Stim_tst,sps_tst); % test log-likelihood
+[LLrbf_tst,rate_rbf] = logli_LNP(pprbf,Stim_tst,sps_tst); % test log-likelihood
 
-% Compute gridded nonlinearity (for plotting purposes)
-[xrbf,yrbf,nlrbf] = compNlin_2D(pprbf.k,pprbf.nlfun,Stim_tr); % compute gridded 2D nonlinearity
+% Compute true filters reconstructed in basis of iSTAC estimates
+filts_rbf = squeeze(pprbf.k);  % filter estimates
+filtsHat_rbf = filts_rbf*(filts_rbf\filts_true); % reconstructed true filts
 
-% Plot filters and nonlinearity
-subplot(244);  % Plot filters
-plot(tt,filts_true,'k--',tt,squeeze(pprbf.k),'linewidth',2); 
-axis tight; title('ML-rbf filters');
-subplot(248); mesh(xrbf,yrbf,nlrbf); 
-axis tight; set(gca,'zlim',zlm);
-xlabel('filter 1 axis');ylabel('filter 2 axis'); 
-zlabel('spike rate (sps/sec)'); title('2D rbf nonlinearity');
+% Plot reconstruction of true filters
+subplot(233);
+plot(tt,filts_true,'k--',tt,filtsHat_rbf,'linewidth',2); 
+axis tight; title('Filter reconstructions: ML-rbf estimates');
 
 
 %% 6. ==== Compute training and test performance in bits/spike =====
 
-% ==== report R2 error in reconstructing first two filters =====
-ktrue = filts_true(:,1:2); % true filters 
-kmse = sum((ktrue(:)-mean(ktrue(:)).^2)); % mse of these two filters around mean
-ferr = @(k)(ktrue-k*(k\ktrue)); % error in optimal R2 reconstruction of ktrue
-fRsq = @(k)(1-sum(sum(ferr(k).^2))/kmse); % R-squared
 
-Rsqvals = [fRsq(istacFilts(:,1:2)),fRsq(istacFilts(:,2:3)),fRsq(squeeze(ppcbf.k)),fRsq(squeeze(pprbf.k))];
+% Let's put istac results on same footing by representing them in the same
+% temporal basis
+
+% Compute true filters reconstructed in basis of iSTAC estimates
+istacFiltsBasis = ktbas*(ktbas\istacFilts);
+filtsHat_istacBasis = istacFiltsBasis*(istacFiltsBasis\filts_true);
+
+% redo first plot
+subplot(231);
+plot(tt,filts_true,'k--',tt,filtsHat_istacBasis,'linewidth',2); 
+axis tight; title('Filter reconstructions: istac estimates (in kt basis)');
+xlabel('time bin before spike');
+
+% ==== report R2 error in reconstructing first two filters =====
+kmse = sum((filts_true(:)-mean(filts_true(:)).^2)); % mse of these two filters around mean
+ferr = @(k)(sum((filts_true(:)-k(:)).^2)); % error in optimal R2 reconstruction of ktrue
+fRsq = @(k)(1-ferr(k)/kmse); % R-squared
+
+Rsqvals = [fRsq(filtsHat_istacBasis),fRsq(filtsHat_cbf),fRsq(filtsHat_rbf)];
 
 fprintf('\n=========== RESULTS ======================================\n');
 fprintf('\nFilter R^2:\n------------\n');
-fprintf('istac-12:%.2f  istac-23:%.2f  cbf:%.2f rbf:%.2f\n',Rsqvals);
+fprintf('istac:%.2f cbf:%.2f rbf:%.2f\n',Rsqvals);
+
+% Plot filter R^2 values
+subplot(245);
+axlabels = {'istac','cbf','rbf'};
+bar(Rsqvals); ylabel('R^2'); title('filter R^2');
+set(gca,'xticklabel',axlabels, 'ylim', [.9 1]);
 
 
 % ====== Compute log-likelihood / single-spike information ==========
@@ -177,10 +172,23 @@ f1 = @(x)((x-LL0_tr)/nsp_tr/log(2)); % compute training single-spike info
 f2 = @(x)((x-LL0_tst)/nsp_tst/log(2)); % compute test single-spike info
 % (Divide by log 2 to get 'bits' instead of 'nats')
 
-SSinfo_tr = [f1(LListac12_tr), f1(LListac23_tr), f1(LLcbf_tr) f1(LLrbf_tr)];
-SSinfo_tst = [f2(LListac12_tst),f2(LListac23_tst), f2(LLcbf_tst) f2(LLrbf_tst)];
+SSinfo_tr = [f1(LListac_tr), f1(LLcbf_tr) f1(LLrbf_tr)];
+SSinfo_tst = [f2(LListac_tst),f2(LLcbf_tst) f2(LLrbf_tst)];
 
 fprintf('\nSingle-spike information (bits/spike):\n');
 fprintf('------------------------------------- \n');
-fprintf('Train: istac-12: %.2f  istac-23: %.2f  cbf:%.2f  rbf:%.2f\n', SSinfo_tr);
-fprintf('Test:  istac-12: %.2f  istac-23: %.2f  cbf:%.2f  rbf:%.2f\n', SSinfo_tst);
+fprintf('Train: istac: %.2f  cbf:%.2f  rbf:%.2f\n', SSinfo_tr);
+fprintf('Test:  istac: %.2f  cbf:%.2f  rbf:%.2f\n', SSinfo_tst);
+
+% Plot test single-spike information
+subplot(246);
+bar(SSinfo_tst); ylabel('bits / sp'); title('test single spike info');
+set(gca,'xticklabel',axlabels, 'ylim', [0.75 1]);
+
+% Plot some rate predictions for first 100 bins
+subplot(2,4,7:8);
+ii = 1:100;
+plot(ii,rate_istac(ii),ii,rate_cbf(ii),ii,rate_rbf(ii), 'linewidth',2);
+title('rate predictions on test data (3-filter models)');
+legend('istac', 'ml-cbf','ml-rbf');
+ylabel('rate (sp/s)'); xlabel('time bin');

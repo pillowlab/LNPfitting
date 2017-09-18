@@ -2,7 +2,7 @@ function [pp,negL,pp_prev,negL_prev] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,f
 % [pp,neglogli] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,nlfuntype,optimArgs)
 %
 % Maximum likelihood / MID fitting of LNP model with multiple filters and
-% either RBF or CBF parametrized nonlinearity
+% RBF parametrized nonlinearity
 %
 %  INPUTS:
 %             pp [1x1] - param struct for LNP model
@@ -26,6 +26,11 @@ function [pp,negL,pp_prev,negL_prev] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,f
 %     negL_prev [L-1x1] - array of negative log-likelihood of smaller models
 %                         (with 1 to L-1 filters) on the training data  
 
+
+% Check nonlinearity type
+if ~strcmpi(fstruct.nlfuntype,'rbf')
+        error('wrong type of nonlinearity: fstruct.nlfuntype should be ''rbf''');
+end
 
 % Extract stimulus temporal basis and filter size
 ktbas = pp.ktbas;
@@ -52,24 +57,16 @@ elseif size(initFilts,2)<nfilts
 end
 
 %% Set optimization functions based on type of nonlinearity requested
-switch lower(fstruct.nlfuntype)
-    case 'cbf'
-        initNLfun = @(x)(x); % no need to initialize nonlinearity for CBF model
-        jointFitFun = @(x)fitLNP_multifilts_cbfNlin(x,Stim,sps,optimArgs); % joint fitting func
-        
-    case 'rbf'
-        initNLfun = @(x)fitNlin_RBFs(x,Stim,sps,fstruct); % initialize RBF nonlinearity
-        jointFitFun = @(x)fitLNP_multifilts_rbfNlin(x,Stim,sps,optimArgs); % joint fitting func
-end
+initNLfun = @(x)fitNlin_RBFs(x,Stim,sps,fstruct); % initialize RBF nonlinearity
+jointFitFun = @(x)fitLNP_multifilts_rbfNlin(x,Stim,sps,optimArgs); % joint fitting func
 
 %% Insert first filter into param struct as represented in basis
 filt0full = reshape(initFilts(:,1),nkt,nkx); % full initial filter
 pp.kt = (ktbas\filt0full); % temporal basis coeffs for filter
 pp.k = ktbas*pp.kt; % full filter represented in temporal basis
 
-
 %% Fit 1-filter model
-fprintf('\n================\nfitLNP: Fitting filter 1 (of %d)\n================\n',nfilts);
+fprintf('\n================\nfitLNP_multifiltsRBF_ML: Fitting filter 1 (of %d)\n================\n',nfilts);
 [pp0,~] = fitNlin_CBFs(pp,Stim,sps,fstruct); % Initialize estimate of nonlinearity
 [pp,negL] = jointFitFun(pp0); % Do joint fitting of nonlinearity and filter
 
@@ -87,12 +84,14 @@ for jj = 2:nfilts
     negL_prev(jj) = negL;
 
     % Add filter to model
-    fprintf('\n================\nfitLNP: Fitting filter %d (of %d)\n================\n',jj,nfilts);
+    fprintf('\n================\nfitLNP_multifiltsRBF_ML: Fitting filter %d (of %d)\n================\n',jj,nfilts);
 
-    [pp0,~,filterPicked] = addfilterLNP_cbfNlin(pp,Stim,sps,initFilts); % pick a filter to add and initialize nonlinearity
-    fprintf('\nInitializing with istac filter #%d\n',filterPicked);
     
-    pp00 = initNLfun(pp0); % initialize nonlinearity for this filter (if RBF only)
-    [pp,negL] = jointFitFun(pp00); % jointly fit filter and nonlinearity
+    nextFilt = reshape(initFilts(:,jj),nkt,nkx);  % filter to add
+    pp.k(:,:,jj) = nextFilt;
+    pp.kt(:,:,jj) = pp.ktbas\nextFilt;
+    
+    pp = initNLfun(pp); % initialize nonlinearity for this filter (if RBF only)
+    [pp,negL] = jointFitFun(pp); % jointly fit filter and nonlinearity
     
 end    

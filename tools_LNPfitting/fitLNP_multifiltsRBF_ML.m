@@ -1,5 +1,5 @@
-function [pp,negL,pp_prev,negL_prev] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,fstruct,initFilts,optimArgs)
-% [pp,neglogli] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,nlfuntype,optimArgs)
+function [pp,negL,pp_prev,negL_prev] = fitLNP_multifiltsRBF_ML(pp,Stim,sps,nfilts,fstruct,initFilts,optimArgs)
+% [pp,neglogli] = fitLNP_multifiltsRBF_ML(pp,Stim,sps,nfilts,nlfuntype,optimArgs)
 %
 % Maximum likelihood / MID fitting of LNP model with multiple filters and
 % RBF parametrized nonlinearity
@@ -30,6 +30,8 @@ function [pp,negL,pp_prev,negL_prev] = fitLNP_multifilts_ML(pp,Stim,sps,nfilts,f
 % Check nonlinearity type
 if ~strcmpi(fstruct.nlfuntype,'rbf')
         error('wrong type of nonlinearity: fstruct.nlfuntype should be ''rbf''');
+else
+    pp.nlfuntype = fstruct.nlfuntype;
 end
 
 % Extract stimulus temporal basis and filter size

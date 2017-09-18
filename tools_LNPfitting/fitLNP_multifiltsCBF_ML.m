@@ -30,6 +30,8 @@ function [pp,negL,pp_prev,negL_prev] = fitLNP_multifiltsCBF_ML(pp,Stim,sps,nfilt
 % Check nonlinearity type
 if ~strcmpi(fstruct.nlfuntype,'cbf')
         error('wrong type of nonlinearity: fstruct.nlfuntype should be ''cbf''');
+else
+    pp.nlfuntype = fstruct.nlfuntype;
 end
 
 % Extract stimulus temporal basis and filter size
@@ -83,7 +85,7 @@ for jj = 2:nfilts
     % Add filter to model
     fprintf('\n================\nfitLNP_multifiltsCBF_ML: Fitting filter %d (of %d)\n================\n',jj,nfilts);
 
-    [pp0,~,filterPicked] = addfilterLNP_bfNlin(pp,Stim,sps,initFilts); % pick a filter to add and initialize nonlinearity
+    [pp0,~,filterPicked] = addfilterLNP_cbfNlin(pp,Stim,sps,initFilts); % pick a filter to add and initialize nonlinearity
 
     % Now optimize negative log-likelihood for filter and nonlinearity
     fprintf('\nInitializing with istac filter #%d\n',filterPicked);

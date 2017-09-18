@@ -37,7 +37,7 @@ if nargin<7
     optimArgs = {'display','on'};
 end
 
-% Compute initial filters using iSTAC if none provided
+%% Compute initial filters using iSTAC if none provided
 if nargin<6 || isempty(initFilts)
     fprintf('\nRunning iSTAC to get initial filter estimates...\n');
     [sta,stc,rawmu,rawcov] = simpleSTC(Stim,sps,nkt);  % compute raw and spike-trippered moments
@@ -51,45 +51,48 @@ elseif size(initFilts,2)<nfilts
     initFilts = [initFilts, initFilts0];
 end
 
-% Set optimization functions based on type of nonlinearity requested
+%% Set optimization functions based on type of nonlinearity requested
 switch lower(fstruct.nlfuntype)
     case 'cbf'
-        initNLfun = @(x)fitNlin_CBFs(x,Stim,sps,fstruct);
-        jointFitFun = @(x)fitLNP_multifilts_cbfNlin(x,Stim,sps,optimArgs);
+        initNLfun = @(x)(x); % no need to initialize nonlinearity for CBF model
+        jointFitFun = @(x)fitLNP_multifilts_cbfNlin(x,Stim,sps,optimArgs); % joint fitting func
         
     case 'rbf'
-        initNLfun = @fitNlin_CBFs;
-        jointFitFun = @fitLNP_multifilts_rbfNlin;
+        initNLfun = @(x)fitNlin_RBFs(x,Stim,sps,fstruct); % initialize RBF nonlinearity
+        jointFitFun = @(x)fitLNP_multifilts_rbfNlin(x,Stim,sps,optimArgs); % joint fitting func
 end
 
-% Insert first filter into param struct as represented in basis
+%% Insert first filter into param struct as represented in basis
 filt0full = reshape(initFilts(:,1),nkt,nkx); % full initial filter
 pp.kt = (ktbas\filt0full); % temporal basis coeffs for filter
 pp.k = ktbas*pp.kt; % full filter represented in temporal basis
+
+
+%% Fit 1-filter model
+fprintf('\n================\nfitLNP: Fitting filter 1 (of %d)\n================\n',nfilts);
+[pp0,~] = fitNlin_CBFs(pp,Stim,sps,fstruct); % Initialize estimate of nonlinearity
+[pp,negL] = jointFitFun(pp0); % Do joint fitting of nonlinearity and filter
+
+
+%% Fit 2 and above filter models.
 
 % Initialize variables for smaller models
 pp_prev = cell(nfilts-1,1); % models with fewer filter
 negL_prev = zeros(nfilts-1,1); % training negative log-likelihood
 
-fprintf('===========\n Fitting 1-filter model\n ==========\n');
-% Initialize estimate of nonlinearity
-[pp0,~] = initNLfun(pp);
-% Do joint fitting of nonlinearity and filter
-[pp,negL] = jointFitFun(pp0); 
+for jj = 2:nfilts
 
-% for jj = 2:nfilts
-% 
-%     % Store previous param struct and neg logli value
-%     pp_prev{jj} = pp;
-%     negL_prev(jj) = negL;
-% 
-%     % Add filter to model
-%     fprintf('===========\n Fitting %d-filter model\n ==========\n',jj);
-% 
-%     [pp2,negL2_tr0,filterPicked] = addfilterLNP_cbfNlin(pp1,Stim_tr,sps_tr,istacFilts); % decide with filter to add
-%     [pp2,negL2_tr] = fitLNP_multifilts_cbfNlin(pp2,Stim_tr,sps_tr,opts); % jointly fit filter and nonlinearity
-%     negL2_test = neglogli_LNP(pp2,Stim_test,sps_test); % compute test log-likelihood
-% 
-% end
+    % Store previous param struct and neg logli value
+    pp_prev{jj} = pp;
+    negL_prev(jj) = negL;
 
+    % Add filter to model
+    fprintf('\n================\nfitLNP: Fitting filter %d (of %d)\n================\n',jj,nfilts);
+
+    [pp0,~,filterPicked] = addfilterLNP_cbfNlin(pp,Stim,sps,initFilts); % pick a filter to add and initialize nonlinearity
+    fprintf('\nInitializing with istac filter #%d\n',filterPicked);
     
+    pp00 = initNLfun(pp0); % initialize nonlinearity for this filter (if RBF only)
+    [pp,negL] = jointFitFun(pp00); % jointly fit filter and nonlinearity
+    
+end    

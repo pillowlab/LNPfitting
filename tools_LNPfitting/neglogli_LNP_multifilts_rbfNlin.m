@@ -14,7 +14,6 @@ function [neglogli,dL] = neglogli_LNP_multifilts_rbfNlin(prs,OPTprs)
 % OUTPUTS:
 %         neglogli [1x1] - negative log likelihood
 %               dL [Nx1] - gradient with respect to prs
-%                H [NxN] - Hessian
 %
 % updated: Jan 24, 2014 (JW Pillow)
 
@@ -86,6 +85,6 @@ elseif (nargout == 2)
     dL = [dLdk(:); dLdf];  % gradient
     
 else
-    error('Hessian calculationnot yet implemented');
+    error('Hessian calculation not yet implemented');
 end
 

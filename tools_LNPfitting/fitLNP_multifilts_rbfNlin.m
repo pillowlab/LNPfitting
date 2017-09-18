@@ -37,8 +37,21 @@ filtprs0(end) = [];
 nfiltprs = length(filtprs0);
 prs0 = [filtprs0;fprs0];
 
-% minimize negative log likelihood 
-[prs,neglogli,exitflag] = fminunc(Loss,prs0,opts);
+if ~exist('minFunc','file')
+    % minimize negative log likelihood using FMINUNC
+    [prs,neglogli,exitflag] = fminunc(Loss,prs0,opts);
+    
+    fprintf('\nMinimizing negative log-likelihood with fminunc...\n\n');
+    fprintf('STRONGLY recommend installing minFunc (which is much faster)\n');
+    fprintf('Get it from: https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html\n\n');
+    fprintf('This code (''fitLNP_multifilts_rbfNlin.m'') will use minFunc if it exists in the path\n\n');
+
+else
+    opts.Display = 'final';
+    [prs,neglogli,exitflag] = minFunc(Loss,prs0,opts);
+end
+
+
 if (exitflag == 0)
     fprintf('fitLNP_multifilts_rbfNlin: max # evaluations or iterations exceeded (fminunc)\n');
 end

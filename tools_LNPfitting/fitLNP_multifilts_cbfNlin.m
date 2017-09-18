@@ -62,7 +62,7 @@ pp.fprs = fprs;
 
 % %----------------------------------------------------
 % % ------ Check analytic gradients, Hessians -------
-%  DerivCheck(Loss,prs0,opts);
+%  HessCheck(Loss,prs0,opts);
 %  HessCheck_Elts(@Loss_LNPfilter_logli, [1 12],prs0,opts);
 %  tic; [lival,J,H]=Loss_LNPfilter_logli(prs0); toc;
 

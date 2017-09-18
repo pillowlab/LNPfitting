@@ -119,7 +119,7 @@ opts = {'display', 'off'}; % optimization parameters
 
 % true 1st filter (from simulation)
 uvec = @(x)(x./norm(x)); % anonymous function to convert vector to unit vector
-trueK = uvec(filts_true(:,1));
+trueK = uvec(filts_true(:,1)); % true filter (as unit vector)
 
 % -- Plot filter and filter estimates (as unit vectors) ---------
 subplot(221); 
@@ -144,10 +144,19 @@ legend('hist','istac-expquad','ML-exptl','ML-rbf','location', 'northwest');
 title('estimated nonlinearities');
 
 % ==== report filter estimation error =========
-ferr = @(k)(1-(norm(uvec(k)-trueK)));  % normalized error
+fRsq = @(k)(1- sum((uvec(k)-trueK).^2)./sum((trueK-mean(trueK)).^2));  % normalized error
+Rsqvals =  [fRsq(sta),fRsq(istacFilt),fRsq(pp_exp.k),fRsq(pp_rbf.k)];
+
 fprintf('\n=========== RESULTS =================\n');
 fprintf('\nFilter R^2:\n------------\n');
-fprintf('sta:%.2f  istac:%.2f  exp:%.2f  rbf:%.2f\n', [ferr(sta),ferr(istacFilt),ferr(pp_exp.k),ferr(pp_rbf.k)]);
+fprintf('sta:%.2f  istac:%.2f  exp:%.2f  rbf:%.2f\n', Rsqvals);
+
+% Plot filter R^2 values
+subplot(247);
+axlabels = {'sta','istac','exp','rbf'};
+bar(Rsqvals); ylabel('bits / sp'); title('filter R^2');
+set(gca,'xticklabel',axlabels, 'ylim', [.9 1]);
+
 
 %% 7. ==== Compute training and test performance in bits/spike =====
 
@@ -166,7 +175,7 @@ pp_sta.nlfun =  fnlhist;
 LLsta_tr = logli_LNP(pp_sta,Stim_tr,sps_tr); % training log-likelihood
 [LLsta_tst,rrsta_tst] = logli_LNP(pp_sta,Stim_tst,sps_tst); % test log-likelihood
 
-% B. Compute logli for lnp with exponentiated-quadratic nonlinearity
+% B. Compute logli for lnp with iSTAC (exponentiated-quadratic) nonlinearity
 LListac_tr = logli_LNP(pp_istac,Stim_tr,sps_tr); % training log-likelihood
 [LListac_tst,rristac_tst] = logli_LNP(pp_istac,Stim_tst,sps_tst); % test log-likelihood
 
@@ -199,8 +208,13 @@ fprintf('------------------------------------- \n');
 fprintf('Train: sta-hist:%.2f  istac: %.2f  exp:%.2f  rbf:%.2f\n', SSinfo_tr);
 fprintf('Test:  sta-hist:%.2f  istac: %.2f  exp:%.2f  rbf:%.2f\n', SSinfo_tst);
 
+% Plot test single-spike information
+subplot(248);
+bar(SSinfo_tst); ylabel('bits / sp'); title('test single spike info');
+set(gca,'xticklabel',axlabels, 'ylim', [.6 0.75]);
+
 % ==== Last: plot the rate predictions for the two models =========
-subplot(212); 
+subplot(223); 
 iiplot = 1:200; % time bins to plot
 stem(iiplot,sps_tst(iiplot), 'k'); hold on;
 plot(iiplot,rrsta_tst(iiplot)/RefreshRate, ...

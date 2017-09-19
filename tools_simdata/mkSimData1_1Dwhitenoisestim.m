@@ -1,10 +1,10 @@
 % mkSimData1_1Dwhitenoisestim.m
 %
 % Generates a simulated dataset with a response of a simulated LNP neuron
-% to a 1D temporal white noise stimulus. LNP neuron generated has a set of
+% to a 1D temporal white noise stimulus. LNP neuron simulated has a set of
 % three temporal filters, each of length 30 time bins. 
 %
-% Dataset created is required for tutorial script demo1_1temporalfilter.m
+% Dataset created is used for demo scripts 1 and 2.
 %
 % Should be called from main code repository ("LNPfitting")
 

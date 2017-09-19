@@ -46,7 +46,7 @@ LListac_tr = logli_LNP(pp_istac,Stim_tr,sps_tr); % training log-likelihood
 [LListac_tst,rate_istac] = logli_LNP(pp_istac,Stim_tst,sps_tst); % test log-likelihood
 
 % -----  Plot filters ------------
-subplot(231); 
+clf; subplot(231); 
 tt = -nkt+1:0;
 
 % Compute true filters reconstructed in basis of iSTAC estimates
@@ -54,7 +54,7 @@ filtsHat_istac = istacFilts*(istacFilts\filts_true);
 
 plot(tt,filts_true,'k--',tt,filtsHat_istac,'linewidth',2); 
 axis tight; title('Filter reconstructions: istac estimates');
-xlabel('time before spike (bins)');
+xlabel('time before spike (bins)'); drawnow;
 
 
 %% == 3. Set up temporal basis for stimulus filters (for ML / MID estimators)
@@ -102,7 +102,7 @@ filtsHat_cbf = filts_cbf*(filts_cbf\filts_true); % reconstructed true filts
 subplot(232);
 plot(tt,filts_true,'k--',tt,filtsHat_cbf,'linewidth',2); 
 axis tight; title('Filter reconstructions: ML-cbf estimates');
-
+drawnow;
 
 %% == 5. ML / MID 2:  ML estimator for LNP with RBF (radial basis func) nonlinearity
 
@@ -187,7 +187,7 @@ fprintf('Test:  istac: %.2f  cbf:%.2f  rbf:%.2f\n', SSinfo_tst);
 % Plot test single-spike information
 subplot(246);
 bar(SSinfo_tst); ylabel('bits / sp'); title('test single spike info');
-set(gca,'xticklabel',axlabels, 'ylim', [0.75 1]);
+set(gca,'xticklabel',axlabels, 'ylim', [min(SSinfo_tst*.9), max(SSinfo_tst)*1.05]);
 
 % Plot some rate predictions for first 100 bins
 subplot(2,4,7:8);

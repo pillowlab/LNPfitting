@@ -215,7 +215,7 @@ fprintf('Test:  sta-hist:%.2f  istac: %.2f  exp:%.2f  cbf:%.2f\n', SSinfo_tst);
 % Plot test single-spike information
 subplot(248);
 bar(SSinfo_tst); ylabel('bits / sp'); title('test single spike info');
-set(gca,'xticklabel',axlabels, 'ylim', [.6 0.75]);
+set(gca,'xticklabel',axlabels, 'ylim', [min(SSinfo_tst*.9), max(SSinfo_tst)*1.05]);
 
 % ==== Last: plot the rate predictions for the two models =========
 subplot(223); 

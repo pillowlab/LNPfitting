@@ -4,8 +4,9 @@ function [Stim_tr,sps_tr,Stim_tst,sps_tst,RefreshRate,filts_true] = loadSimDatas
 % Loads (and/or creates) simulated datasets for LNPfitting demo code
 %
 % INPUT
-%  datasetnum - 1, temporal white noise
-%               2, temporal correlated noise
+%  datasetnum - 1, 1D (temporal) white noise
+%               2, 1D (temporal) correlated noise
+%               3, 2D (spatio-temporal) binary white noise
 %
 % OUTPUT
 %    Stim_tr [ntrain x nx] - training stimulus
@@ -28,6 +29,12 @@ switch datasetnum
         if ~exist(datasetname,'file') % Create simulated dataset if necessary
             fprintf('Creating simulated dataset: ''%s''\n', datasetname);
             mkSimData2_1Dcorrstim;
+        end
+    case 3
+        datasetname = 'simdatadir/simdata3.mat';  % name of dataset
+        if ~exist(datasetname,'file') % Create simulated dataset if necessary
+            fprintf('Creating simulated dataset: ''%s''\n', datasetname);
+            mkSimData3_2Dnoisestim.m;
         end
 end
 

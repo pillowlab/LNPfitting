@@ -70,7 +70,8 @@ r5 = sameconv(Stim,f5);
 
 % Make nonlinearity
 f = @(x)(log(1+exp(3*x))); % soft-rectification function
-fnlin = @(x1,x2,x3,x4,x5)(f(4*f(r1)+.3*f(r2).^2+.3*f(r3).^2-.6*f(r4).^2-.6*f(r5).^2+5));
+fsig = @(x)(150./(1+exp(-.33*(x-15)))+1); % sigmoid rectifying at 150
+fnlin = @(x1,x2,x3,x4,x5)(fsig(6*f(r1)+.33*f(r2).^2+.33*f(r3).^2-.6*f(r4).^2-.6*f(r5).^2));
 
 % Compute output of nonlinearity
 lam = fnlin(r1,r2,r3,r4,r5);
@@ -78,21 +79,21 @@ lam = fnlin(r1,r2,r3,r4,r5);
 %  Simulate spike train
 spikes = poissrnd(lam/RefreshRate); % generate spikes
 
-% % Inspect simulated data using STC
-% % --------------------------------
-% subplot(221); plot(lam(1:100)) % Conditional intensity
-% [sta,stc] = simpleSTC(Stim,spikes,nkt);
-% [u,s,v] = svd(stc);
-% subplot(222); plot(diag(s), 'o');
-% subplot(256); imagesc(sta);
-% subplot(257); imagesc(reshape(u(:,1),nkt,nkx));
-% subplot(258); imagesc(reshape(u(:,2),nkt,nkx));
-% subplot(259); imagesc(reshape(u(:,end-1),nkt,nkx));
-% subplot(2,5,10); imagesc(reshape(u(:,end),nkt,nkx));
-% 
-% % Report number of spikes and spike rate
-% nsp = sum(spikes); % number of spikes
-% fprintf('LNP simulation: %d time bins, %d spikes  (%.2f sp/s)\n', slen,nsp, nsp/slen*RefreshRate);
+% Inspect simulated data using STC
+% --------------------------------
+subplot(221); plot(lam(1:100)) % Conditional intensity
+[sta,stc] = simpleSTC(Stim,spikes,nkt);
+[u,s,v] = svd(stc);
+subplot(222); plot(diag(s), 'o');
+subplot(256); imagesc(sta);
+subplot(257); imagesc(reshape(u(:,1),nkt,nkx));
+subplot(258); imagesc(reshape(u(:,2),nkt,nkx));
+subplot(259); imagesc(reshape(u(:,end-1),nkt,nkx));
+subplot(2,5,10); imagesc(reshape(u(:,end),nkt,nkx));
+
+% Report number of spikes and spike rate
+nsp = sum(spikes); % number of spikes
+fprintf('LNP simulation: %d time bins, %d spikes  (%.2f sp/s)\n', slen,nsp, nsp/slen*RefreshRate);
 
 %% 3. Save the dataset
 

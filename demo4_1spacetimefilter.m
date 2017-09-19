@@ -1,35 +1,34 @@
-% demo1_1temporalfilter.m
+% demo4_1spacetimefilter.m
 %
 % Tutorial script illustrating maximum likelihood / maximally informative
-% dimensions (MID) estimation for an LNP model with a single filter and
-% purely temporal stimulus.  
+% dimensions (MID) estimation for LNP model with a single space-time filter.
 %
-% Also shows STA, iSTAC and GLM-with-exp-nonlinearity estimates for comparison.
+% This demo borrows heavily from demo1, and differs mostly due to the need
+% to plot the space-time filter as a 2D image.
 
 % initialize paths
 initpaths;
 
-% Select dataset and size of training set
-datasetnum = 2;  % select: 1 (white noise) or 2 (correlated)
+datasetnum = 3;  % for spatial binary white noise stimulus
 trainfrac = .8; % fraction of data to use for training (remainder is "test data")
 
 % Load data divided into training and test sets
 [Stim_tr,sps_tr,Stim_tst,sps_tst,RefreshRate,filts_true] = loadSimDataset(datasetnum,trainfrac);
 
-% Get sizes and spike counts
 slen_tr = size(Stim_tr,1);   % length of training stimulus / spike train
 slen_tst = size(Stim_tst,1); % length of test stimulus / spike train
+nx = size(Stim_tr,2); % number of spatial pixels
 nsp_tr = sum(sps_tr);   % number of spikes in training set
 nsp_tst = sum(sps_tst); % number of spikes in test set
 
 %% == 1. Compute STA and estimate (piecewise constant) nonlinearity using histograms ====
 
-nkt = 30; % number of time bins to use for filter 
+nkt = 12; % number of time bins to use for filter 
 % This is important: normally would want to vary this to find optimal filter length
 
 % Compute STA
 sta = simpleSTC(Stim_tr,sps_tr,nkt);  % compute STA
-sta = sta./norm(sta);  % normalize sta to be a unit vector
+sta = sta./norm(sta(:));  % normalize sta to be a unit vector
 
 % Estimate piecewise-constant nonlinearity ("reconstruction" method using histograms)
 nhistbins = 15; % # histogram bins to use
@@ -46,11 +45,7 @@ nFilts = 1; % number of filters to compute
 % Compute iSTAC estimator
 fprintf('\nComputing iSTAC estimate\n');
 [sta,stc,rawmu,rawcov] = simpleSTC(Stim_tr,sps_tr,nkt);  % compute STA and STC
-[istacFilt,vals,DD] = compiSTAC(sta(:),stc,rawmu,rawcov,nFilts); % find iSTAC filters
-
-% Fit iSTAC nonlinearity using moment-based formula (*slightly* less accurate)
-% pspike = nsp_tr/slen_tr;  % mean spike probability per bin
-% pp_istac0 = fitNlin_expquad_iSTACmomentbased(istacFilt,DD,pspike,[nkt,1],RefreshRate); 
+istacFilt = compiSTAC(sta(:),stc,rawmu,rawcov,nFilts); % find iSTAC filters
 
 % Fit iSTAC exponentiated-quadratic nonlinearity using maximum likelihood
 pp_istac = fitNlin_expquad_ML(Stim_tr,sps_tr,istacFilt,RefreshRate); 
@@ -64,28 +59,31 @@ pp0 = makeFittingStruct_LNP(sta,RefreshRate,mask); % initialize param struct
 % == Set up temporal basis for representing filters  ====
 % (try changing these params until basis can accurately represent STA).
 ktbasprs.neye = 0; % number of "identity"-like basis vectors
-ktbasprs.ncos = 8; % number of raised cosine basis vectors
-ktbasprs.kpeaks = [0 nkt/2+3]; % location of 1st and last basis vector bump
-ktbasprs.b = 7; % determines how nonlinearly to stretch basis (higher => more linear)
+ktbasprs.ncos = 6; % number of raised cosine basis vectors (DETERMINES BASIS DIMENSIONALITY)
+ktbasprs.kpeaks = [0 3*nkt/4]; % location of 1st and last basis vector bump
+ktbasprs.b = 50; % determines how nonlinearly to stretch basis (higher => more linear)
 [ktbas, ktbasis] = makeBasis_StimKernel(ktbasprs, nkt); % make basis
 filtprs_basis = (ktbas'*ktbas)\(ktbas'*sta);  % filter represented in new basis
 sta_basis = ktbas*filtprs_basis;
 
 % Plot STA vs. best reconstruction in temporal basis
 tt = (-nkt+1:0);  % time points in Stim_tr filter
-subplot(211); % ----
+subplot(221); % ----
 plot(tt,ktbasis); xlabel('time bin'); title('temporal basis'); axis tight;
-subplot(212); % ----
+subplot(223); % ----
 plot(tt,sta,tt,sta_basis,'r--', 'linewidth', 2); 
 axis tight; title('STA and basis fit');
 xlabel('time bin'); legend('sta', 'basis fit');
+subplot(222); imagesc(sta); axis image; title('sta');
+subplot(224); imagesc(sta_basis); axis image; title('basis fit');
+
+fprintf('R^2 = %.3f\n', 1-sum((sta(:)-sta_basis(:)).^2)/sum((sta(:)-mean(sta(:))).^2));
 
 % Insert filter basis into fitting struct
 pp0.k = sta_basis; % insert sta filter
 pp0.kt = filtprs_basis; % filter coefficients (in temporal basis)
 pp0.ktbas = ktbas; % temporal basis
 pp0.ktbasprs = ktbasprs;  % parameters that define the temporal basis
-
 
 %% == 4. Maximum likelihood estimation of filter under exponential nonlinearity [OPTIONAL]
 
@@ -122,15 +120,19 @@ opts = {'display', 'off'}; % optimization parameters
 %% 6. ====== Make plots & report performance ============
 
 % true 1st filter (from simulation)
-uvec = @(x)(x./norm(x)); % anonymous function to convert vector to unit vector
-trueK = uvec(filts_true(:,1)); % true filter (as unit vector)
+uvec = @(x)(x(:)./norm(x(:))); % anonymous function to convert vector to unit vector
+rs = @(x)(reshape(x,nkt,nx)); % reshape as image
+trueK = rs(uvec(filts_true(:,1))); % true filter (as unit vector)
 
 % -- Plot filter and filter estimates (as unit vectors) ---------
-subplot(221); 
-plot(tt,trueK,'k',tt,sta,tt,istacFilt,tt,uvec(pp_exp.k),tt,uvec(pp_cbf.k), 'linewidth',2);
-legend('true','sta','istac','ML-exptl','ML-rbf','location', 'northwest');
-xlabel('time before spike (ms)'); ylabel('weight');
-title('filters (rescaled as unit vectors)');  axis tight;
+subplot(251);  imagesc(1:nx,tt,trueK); title('first model filter');
+subplot(252);  imagesc(1:nx,tt,sta); title('sta');
+subplot(253);  imagesc(1:nx,tt,rs(istacFilt)); title('istac');
+subplot(254);  imagesc(1:nx,tt,pp_exp.k); title('ML-exp');
+subplot(255);  imagesc(1:nx,tt,pp_cbf.k); title('ML-rbf');
+
+% Note the filter labelled "true" is just the first filter of the true
+% model (which had 5 filters) -- not clear that this filter is really most
 
 % ---- Compute nonlinearities for plotting ---------
 xnl = (xbinedges(1)-.1):.1:(xbinedges(end)+0.1); % x points for evaluating nonlinearity
@@ -140,26 +142,12 @@ ynl_exp = exp(xnl*norm(pp_exp.k)+pp_exp.dc);  % exponential nonlinearity
 ynl_cbf = pp_cbf.nlfun(xnl*norm(pp_cbf.k));   % rbf nonlinearity
 
 % ---- Plot nonlinearities --------------------------
-subplot(222); 
+subplot(234); 
 plot(xnl, ynl_hist,xnl,ynl_istac,xnl,ynl_exp,xnl,ynl_cbf, 'linewidth',2);
 axis tight; set(gca,'ylim',[0 200]);
 ylabel('rate (sps/s)'); xlabel('filter output');
 legend('sta-hist','istac-expquad','ML-exptl','ML-cbf','location', 'northwest');
 title('estimated nonlinearities');
-
-% ==== report filter estimation error =========
-fRsq = @(k)(1- sum((uvec(k)-trueK).^2)./sum((trueK-mean(trueK)).^2));  % normalized error
-Rsqvals =  [fRsq(sta),fRsq(istacFilt),fRsq(pp_exp.k),fRsq(pp_cbf.k)];
-
-fprintf('\n=========== RESULTS =================\n');
-fprintf('\nFilter R^2:\n------------\n');
-fprintf('sta:%.2f  istac:%.2f  exp:%.2f  cbf:%.2f\n', Rsqvals);
-
-% Plot filter R^2 values
-subplot(247);
-axlabels = {'sta','istac','exp','cbf'};
-bar(Rsqvals); ylabel('R^2'); title('filter R^2');
-set(gca,'xticklabel',axlabels, 'ylim', [.9 1]);
 
 
 %% 7. ==== Compute training and test performance in bits/spike =====
@@ -213,13 +201,14 @@ fprintf('Train: sta-hist:%.2f  istac: %.2f  exp:%.2f  cbf:%.2f\n', SSinfo_tr);
 fprintf('Test:  sta-hist:%.2f  istac: %.2f  exp:%.2f  cbf:%.2f\n', SSinfo_tst);
 
 % Plot test single-spike information
-subplot(248);
+subplot(235);
+axlabels = {'sta','istac','exp','cbf'};
 bar(SSinfo_tst); ylabel('bits / sp'); title('test single spike info');
 set(gca,'xticklabel',axlabels, 'ylim', [min(SSinfo_tst*.9), max(SSinfo_tst)*1.05]);
 
 % ==== Last: plot the rate predictions for the two models =========
-subplot(223); 
-iiplot = 1:200; % time bins to plot
+subplot(236); 
+iiplot = 1:100; % time bins to plot
 stem(iiplot,sps_tst(iiplot), 'k'); hold on;
 plot(iiplot,rrsta_tst(iiplot)/RefreshRate, ...
     iiplot,rristac_tst(iiplot)/RefreshRate, ...

@@ -77,6 +77,7 @@ xlabel('time bin'); legend('sta', 'basis fit');
 subplot(222); imagesc(sta); axis image; title('sta');
 subplot(224); imagesc(sta_basis); axis image; title('basis fit');
 
+% Compute R^2 for the STA in this basis
 fprintf('R^2 = %.3f\n', 1-sum((sta(:)-sta_basis(:)).^2)/sum((sta(:)-mean(sta(:))).^2));
 
 % Insert filter basis into fitting struct

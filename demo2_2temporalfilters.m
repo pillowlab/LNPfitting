@@ -153,7 +153,7 @@ zlabel('spike rate (sps/sec)'); title('2D rbf nonlinearity');
 
 % ==== report R2 error in reconstructing first two filters =====
 ktrue = filts_true(:,1:2); % true filters 
-kmse = sum((ktrue(:)-mean(ktrue(:)).^2)); % mse of these two filters around mean
+kmse = sum((ktrue(:)-mean(ktrue(:))).^2); % mse of these two filters around mean
 ferr = @(k)(ktrue-k*(k\ktrue)); % error in optimal R2 reconstruction of ktrue
 fRsq = @(k)(1-sum(sum(ferr(k).^2))/kmse); % R-squared
 

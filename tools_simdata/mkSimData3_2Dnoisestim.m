@@ -58,20 +58,20 @@ filts_true = [f1(:), f2(:), f3(:), f4(:), f5(:)];
 %% 2.  Simulate spike responses from LNP neuron
 
 % Create stimulus 
-slen = 50000;   % Stimulus length (make longer to see better recovery of true filters)
+slen = 2e5;  % Stimulus length (make longer to see better recovery of true filters)
 Stim = (rand(slen,nkx)>0.5)*2-1; % 2D Gaussian binary white noise
 
 % Convolve stimulus with filters
-r1 = sameconv(Stim,f1);
-r2 = sameconv(Stim,f2);
-r3 = sameconv(Stim,f3);
+r1 = sameconv(Stim,f1); % filter 1 output
+r2 = sameconv(Stim,f2); % filter 2 output 
+r3 = sameconv(Stim,f3); % ...
 r4 = sameconv(Stim,f4);
 r5 = sameconv(Stim,f5);
 
 % Make nonlinearity
-f = @(x)(log(1+exp(3*x))); % soft-rectification function
-fsig = @(x)(150./(1+exp(-.33*(x-15)))+1); % sigmoid rectifying at 150
-fnlin = @(x1,x2,x3,x4,x5)(fsig(6*f(r1)+.33*f(r2).^2+.33*f(r3).^2-.6*f(r4).^2-.6*f(r5).^2));
+f = @(x)(.25*log(1+exp(4*x))); % soft-rectification function
+fsig = @(x)(125./(1+exp(-2*(x-2)))+1); % sigmoid rectifying at 150
+fnlin = @(x1,x2,x3,x4,x5)(fsig(5*f(r1)+f(r2).^2+f(r3).^2-3*f(r4).^2-3*f(r5).^2));
 
 % Compute output of nonlinearity
 lam = fnlin(r1,r2,r3,r4,r5);
@@ -102,5 +102,5 @@ simdata.spikes = spikes;
 simdata.filts_true = filts_true;
 simdata.dtBin = dtBin; 
 simdata.RefreshRate = RefreshRate;
-simdata.label = 'simulated dataset of 3-filter LNP neuron to temporal correlated noise';
+simdata.label = 'simulated dataset of 5-filter LNP neuron to spatio-temporal binary white noise';
 save(fname, 'simdata');

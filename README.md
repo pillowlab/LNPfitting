@@ -1,5 +1,5 @@
 # LNPfitting
-Linear-Nonlinear-Poisson (LNP) model fitting via maximum likelihood, aka Maximally-Informative-Dimensions (MID)
+Linear-Nonlinear-Poisson (LNP) model fitting via maximum likelihood, aka Maximally-Informative-Dimensions (MID).
 
 **Description:** Estimates the parameters of an LNP model (a set of linear filters and a nonlinear function) from a stimulus and
  spike train using the *maximally informative dimension* (MID) estimator (introduced in Sharpee *et al* 2004). MID is a nonparametric maximum-likelihood estimator for the parameters of a linear-nonlinear-Poisson (LNP) neural response model.
@@ -26,7 +26,23 @@ Usage
 * Launch matlab and cd into the directory containing the code
  (e.g. `cd code/LNPfitting/`).
 
-* Examine the demo scripts (`demo1_1temporalfilter`, ...) for detailed instructions and applications to simulated datasets.
+* Examine the demo scripts for annotated example analyses of simulated
+datasets: 
+	*  `demo1_1temporalfilter.m` - estimate a single temporal filter
+    using STA, iSTAC, GLM with exponential nonlinearity, and using
+    ML / MID estimation of filter and a nonlinearity parametrized
+    by radial basis functions. Shows validation using R^2 of true
+	filter and single-spike information (log-likelihood).
+	*  `demo2_2temporalfilters.m` - similar, but for two-filter LNP
+	models; shows how to plot inferred 2D nonlinearity.
+	* `demo3_3temporalfilters` - compares iSTAC, and ML/MID estimates with cylindrical basis
+	functions (CBFs) and with radial basis functions (RBFs) for
+	parametrizing the nonlinearity.
+	* `demo4_1spacetimefilter.m` - similar to demo1 but for 2D (space x
+	time) binary white noise stimulus.
+	* `demo5_5spacetimefilters.m` - similar to demo3, but recovers 5
+	space-time filters. Compares iSTAC, and ML/MID with CBFs and RBFs.
+
 
 
 Notes
@@ -35,10 +51,13 @@ Notes
 Primary differences between our implementation and that of Sharpee et
 al 2004:
 
-* This implementation parametrizes the nonlinearity with smooth RBF
-  (or CBF) basis functions (followed by a point nonlinearity) instead
-  of square histogram bins, which makes the log-likelihood
+* Parametrizes the nonlinearity with smooth RBF
+  (or CBF) basis functions (followed by a rectifying point
+  nonlinearity to keep spike rates positive) instead
+  of square histogram bins. This makes the log-likelihood
   differentiable and therefore easier to ascend.
 
-* This implementation uses standard quasi-Newton methods to find a
-  local optimum, as opposed to simulated annealing.
+* Uses standard quasi-Newton optimization methods (fminunc or minFunc)
+  instead of simulated annealing. (Thus no guarantee that it finds
+  global optimum, but runtime is substantially faster and performance
+  is high in simulated and real datasets considered so far).

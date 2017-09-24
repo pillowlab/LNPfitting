@@ -98,7 +98,7 @@ LLcbf_tr = logli_LNP(ppcbf,Stim_tr,sps_tr); % training log-likelihood
 filts_cbf = squeeze(ppcbf.k);  % filter estimates
 filtsHat_cbf = filts_cbf*(filts_cbf\filts_true); % reconstructed true filts
 
-% Plot reconstruction of true filters
+% Plot reconstruction of true filters in basis of estimated filters
 subplot(232);
 plot(tt,filts_true,'k--',tt,filtsHat_cbf,'linewidth',2); 
 axis tight; title('Filter reconstructions: ML-cbf estimates');
@@ -123,7 +123,7 @@ LLrbf_tr = logli_LNP(pprbf,Stim_tr,sps_tr); % training log-likelihood
 filts_rbf = squeeze(pprbf.k);  % filter estimates
 filtsHat_rbf = filts_rbf*(filts_rbf\filts_true); % reconstructed true filts
 
-% Plot reconstruction of true filters
+% Plot reconstruction of true filters in basis of estimated filters
 subplot(233);
 plot(tt,filts_true,'k--',tt,filtsHat_rbf,'linewidth',2); 
 axis tight; title('Filter reconstructions: ML-rbf estimates');
@@ -146,7 +146,7 @@ axis tight; title('Filter reconstructions: istac estimates (in kt basis)');
 xlabel('time bin before spike');
 
 % ==== report R2 error in reconstructing first two filters =====
-kmse = sum((filts_true(:)-mean(filts_true(:)).^2)); % mse of these two filters around mean
+kmse = sum((filts_true(:)-mean(filts_true(:))).^2); % mse of these two filters around mean
 ferr = @(k)(sum((filts_true(:)-k(:)).^2)); % error in optimal R2 reconstruction of ktrue
 fRsq = @(k)(1-ferr(k)/kmse); % R-squared
 

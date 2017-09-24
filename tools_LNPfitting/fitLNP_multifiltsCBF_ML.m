@@ -1,5 +1,5 @@
 function [pp,negL,pp_prev,negL_prev] = fitLNP_multifiltsCBF_ML(pp,Stim,sps,nfilts,fstruct,initFilts,optimArgs)
-% [pp,neglogli] = fitLNP_multifiltsCBF_ML(pp,Stim,sps,nfilts,nlfuntype,optimArgs)
+% [pp,negL,pp_prev,negL_prev] = fitLNP_multifiltsCBF_ML(pp,Stim,sps,nfilts,fstruct,initFilts,optimArgs)
 %
 % Maximum likelihood / MID fitting of LNP model with multiple filters and
 % either CBF parametrized nonlinearity
@@ -79,8 +79,8 @@ negL_prev = zeros(nfilts-1,1); % training negative log-likelihood
 for jj = 2:nfilts
 
     % Store previous param struct and neg logli value
-    pp_prev{jj} = pp;
-    negL_prev(jj) = negL;
+    pp_prev{jj-1} = pp;
+    negL_prev(jj-1) = negL;
 
     % Add filter to model
     fprintf('\n================\nfitLNP_multifiltsCBF_ML: Fitting filter %d (of %d)\n================\n',jj,nfilts);
@@ -91,4 +91,8 @@ for jj = 2:nfilts
     fprintf('\nInitializing with istac filter #%d\n',filterPicked);
     [pp,negL] = fitLNP_multifilts_cbfNlin(pp0,Stim,sps,optimArgs); % jointly fit filter and nonlinearity
     
-end    
+end
+
+% store final object in same cell array (for convenience)
+pp_prev{nfilts} = pp;
+negL_prev(nfilts) = negL;

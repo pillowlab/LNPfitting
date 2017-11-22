@@ -1,4 +1,4 @@
-function [kbas,kbasis] = makeBasis_StimKernel(kbasprs, nkt);
+function [kbas,kbasis] = makeBasis_StimKernel(kbasprs, nkt)
 %  [kbas, kbasis] = makeBasis_StimKernel(kbasprs, nkt);
 % 
 %  Generates a basis consisting of raised cosines and several columns of
@@ -29,16 +29,29 @@ kdt = 1;  % spacing of x axis must be in units of 1
 nlin = @(x)log(x+1e-20);
 invnl = @(x)exp(x)-1e-20; % inverse nonlinearity
 
-
 % Generate basis of raised cosines
-yrnge = nlin(kpeaks+b);  
-db = diff(yrnge)/(ncos-1);      % spacing between raised cosine peaks
-ctrs = yrnge(1):db:yrnge(2);  % centers for basis vectors
-mxt = invnl(yrnge(2)+2*db)-b; % maximum time bin
-kt0 = [0:kdt:mxt]';
-nt = length(kt0);        % number of points in iht
-ff = @(x,c,dc)(cos(max(-pi,min(pi,(x-c)*pi/dc/2)))+1)/2; % raised cosine basis vector
-kbasis0 = ff(repmat(nlin(kt0+b), 1, ncos), repmat(ctrs, nt, 1), db);
+if ncos == 0  % No raised cosine basis vectors
+    kt0 = [];
+    kbasis0 = [];
+else
+    yrnge = nlin(kpeaks+b); 
+    if isinf(yrnge(1)) || isnan(yrnge(1))
+        error('kpeaks+b values must be >0 ; try increasing kpeaks(1) or b value')
+    end
+    if ncos == 1  % Only one raised cosine basis vector
+        warning('makeBasis_StimKernel: only creating single cosine basis vector');
+        db = 2*diff(yrnge)/3;    % spacing between raised cosine peaks
+        ctrs = yrnge(1);     % centers for basis vectors
+    else  % For >= 2 raised cosine basis vectors
+        db = diff(yrnge)/(ncos-1);    % spacing between raised cosine peaks
+        ctrs = yrnge(1):db:yrnge(2);  % centers for basis vectors
+    end
+    mxt = invnl(yrnge(2)+2*db)-b; % maximum time bin
+    kt0 = (0:kdt:mxt)';   % time bins for cosine basis
+    nt = length(kt0);     % number of time bins
+    ff = @(x,c,dc)(cos(max(-pi,min(pi,(x-c)*pi/dc/2)))+1)/2; % raised cosine basis vector
+    kbasis0 = ff(repmat(nlin(kt0+b), 1, ncos), repmat(ctrs, nt, 1), db);
+end
 
 % Concatenate identity-vectors
 nkt0 = size(kt0,1);

@@ -52,10 +52,10 @@ if (nt == 1) % no temporal basis if only 1 time bin
     pp.ktbasprs = 'none';
 elseif ~isfield(pp, 'ktbas') || isempty(pp.ktbas)
     nkt = size(pp.k,1);  % number of temporal elements in the k
-    ktbasprs.neye = min(5,floor(nkt/2)); % # "identity" basis vectors near time of spike;
-    ktbasprs.ncos = min(5,floor(nkt/2)); % # raised-cosine vectors to use
+    ktbasprs.neye = 0; % # "identity" basis vectors near time of spike [Default=0]
+    ktbasprs.ncos = max(2,ceil(nkt/2.5));  % # raised-cosine vectors to use
     ktbasprs.kpeaks = [0 ((nkt-ktbasprs.neye)/2)]; % Position of 1st and last bump
-    ktbasprs.b = 1; % Offset for nonlinear scaling (larger -> more linear)
+    ktbasprs.b = 0.5; % Offset for nonlinear scaling (larger -> more linear)
     ktbas = makeBasis_StimKernel(ktbasprs,nkt);
     pp.ktbas = ktbas;
     pp.ktbasprs = ktbasprs;

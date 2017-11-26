@@ -5,5 +5,9 @@
 ._*
 *~
 
-# folder with simulated data (no need to store in git)
+
+# folder with simulated data
 simdatadir/*
+
+# folder with local data
+local/*
